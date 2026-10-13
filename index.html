@@ -384,8 +384,8 @@
       <span>🥗 우리 가족 식단 & 장바구니</span>
       <span class="header-badge" id="live-indicator">로컬 연동</span>
     </div>
-    <!-- 공개 레포지토리 배포용 링크 (필요 시 실제 시트 주소로 교체) -->
-    <a href="#" target="_blank" rel="noopener noreferrer" class="sheet-link-btn" title="구글 스프레드시트 바로가기">
+    <!-- 구글 스프레드시트 바로가기 (주소는 sheet-config.js에서 주입, 미설정 시 숨김) -->
+    <a id="sheetLinkBtn" href="#" target="_blank" rel="noopener noreferrer" class="sheet-link-btn" title="구글 스프레드시트 바로가기" style="display: none;">
       <svg width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H6v-2h3v2zm0-4H6v-2h3v2zm0-4H6V7h3v2zm9 8h-7v-2h7v2zm0-4h-7v-2h7v2zm0-4h-7V7h7v2z"/></svg>
       구글 시트
     </a>
@@ -565,6 +565,8 @@
     </button>
   </nav>
 
+  <!-- 로컬 전용 시트 설정 (gitignore됨). 파일이 없으면 내장 데이터로 동작 -->
+  <script src="sheet-config.js"></script>
   <script>
     // Weekly Meals Database
     const MEALS_DATA = [
@@ -736,19 +738,139 @@
       }
     ];
 
+    // ── 구글 스프레드시트 연동 ──────────────────────────────
+    // 시트 주소는 gitignore된 sheet-config.js에서 관리 (깃허브에 노출되지 않음)
+    // 형식: window.SHEET_CONFIG = { sheetId: '시트 ID', gid: '0' };
+    const SHEET_CFG = window.SHEET_CONFIG || {};
+    const SHEET_ID = (SHEET_CFG.sheetId || '').trim();
+    const SHEET_GID = (SHEET_CFG.gid || '0').trim();
+    const SHEET_CSV_URL = SHEET_ID && !SHEET_ID.includes('여기에')
+      ? `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${SHEET_GID}`
+      : '';
+
+    // RFC 4180 방식 CSV 파서 (따옴표·쉼표·개행이 포함된 필드 지원)
+    function parseCSV(text) {
+      const rows = [];
+      let row = [], field = '', inQuotes = false;
+      for (let i = 0; i < text.length; i++) {
+        const c = text[i];
+        if (inQuotes) {
+          if (c === '"') {
+            if (text[i + 1] === '"') { field += '"'; i++; }
+            else inQuotes = false;
+          } else field += c;
+        } else {
+          if (c === '"') inQuotes = true;
+          else if (c === ',') { row.push(field); field = ''; }
+          else if (c === '\n') { row.push(field); field = ''; rows.push(row); row = []; }
+          else if (c !== '\r') field += c;
+        }
+      }
+      if (field !== '' || row.length) { row.push(field); rows.push(row); }
+      return rows.filter(r => r.some(c => c.trim() !== ''));
+    }
+
+    function splitList(text) {
+      return (text || '').split(/[,，]/).map(s => s.trim()).filter(Boolean);
+    }
+
+    // 'MM/DD' → 오늘 기준 가장 가까운 해의 'YYYY-MM-DD'
+    function buildIdFromMD(md) {
+      const m = (md || '').match(/(\d{1,2})\s*\/\s*(\d{1,2})/);
+      if (!m) return null;
+      const month = +m[1], day = +m[2];
+      const now = new Date(); now.setHours(0, 0, 0, 0);
+      const pad = n => String(n).padStart(2, '0');
+      let bestId = `${now.getFullYear()}-${pad(month)}-${pad(day)}`, bestDiff = Infinity;
+      [now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1].forEach(yy => {
+        const diff = Math.abs(new Date(yy, month - 1, day) - now);
+        if (diff < bestDiff) { bestDiff = diff; bestId = `${yy}-${pad(month)}-${pad(day)}`; }
+      });
+      return bestId;
+    }
+
+    // 시트 CSV 행 → MEALS_DATA 항목 구조로 변환
+    function rowsToMeals(rows) {
+      const header = rows[0].map(h => h.trim());
+      const findCol = (...names) => {
+        for (const n of names) {
+          const i = header.findIndex(h => h.includes(n));
+          if (i >= 0) return i;
+        }
+        return -1;
+      };
+      const iDay = findCol('요일'), iDate = findCol('날짜'), iMenu = findCol('메뉴');
+      const iIng = findCol('식재료'), iTime = findCol('조리 시간');
+      const iHealth = findCol('영양'), iStatus = findCol('상태');
+
+      return rows.slice(1).map(r => {
+        const get = i => (i >= 0 && r[i] !== undefined ? r[i].trim() : '');
+        const dayName = get(iDay);
+        const dateStr = get(iDate);
+        const id = buildIdFromMD(dateStr);
+        const menu = get(iMenu);
+        const items = splitList(get(iIng));
+        const time = get(iTime);
+        const status = get(iStatus);
+        const health = splitList(get(iHealth));
+
+        const [, mm, dd] = (id || '').split('-');
+        const statusBadge = status.includes('완료') ? '✅ 조리 완료'
+                          : status.includes('진행') ? '🔥 진행 중'
+                          : status || '예정';
+
+        return {
+          id,
+          dayName,
+          dateStr,
+          fullDateStr: id ? `${+mm}월 ${+dd}일 (${dayName})` : `${dateStr} (${dayName})`,
+          badge: statusBadge,
+          title: menu,
+          subtitle: [time && time !== '-' ? `⏱ 조리 ${time}` : '', status].filter(Boolean).join(' · '),
+          tags: [...(time && time !== '-' ? [`⏱ ${time}`] : []), ...items.map(t => `🛒 ${t}`)],
+          ingredients: items.map(name => ({ name, qty: '' })),
+          healthInfo: health.length
+            ? health.map(p => `• ${p}`).join('<br>')
+            : '시트에 영양 포인트 정보가 없습니다.',
+          steps: [
+            {
+              title: '조리 순서는 구글 시트에서 관리',
+              desc: '이 메뉴의 상세 조리 순서는 연결된 구글 스프레드시트에서 확인하세요.',
+              tip: ''
+            }
+          ]
+        };
+      }).filter(m => m.id && m.title);
+    }
+
+    async function loadMealsFromSheet() {
+      if (!SHEET_CSV_URL) throw new Error('sheet-config.js에 시트 주소가 없습니다');
+      const res = await fetch(`${SHEET_CSV_URL}&_=${Date.now()}`, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const rows = parseCSV(await res.text());
+      if (rows.length < 2) throw new Error('시트에 데이터 행이 없습니다');
+      const meals = rowsToMeals(rows);
+      if (!meals.length) throw new Error('행을 변환하지 못했습니다');
+      return meals;
+    }
+
     function getTodayId() {
-      const now = new Date();
-      const y = now.getFullYear();
-      const m = String(now.getMonth() + 1).padStart(2, '0');
-      const d = String(now.getDate()).padStart(2, '0');
-      const dateStr = `${y}-${m}-${d}`;
-      
+      const now = new Date(); now.setHours(0, 0, 0, 0);
+      const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
       const exists = MEALS_DATA.find(item => item.id === dateStr);
-      return exists ? dateStr : "2026-10-13";
+      if (exists) return dateStr;
+      // 오늘 날짜가 데이터에 없으면 가장 가까운 날짜를 기본 선택
+      let best = MEALS_DATA[0], bestDiff = Infinity;
+      MEALS_DATA.forEach(item => {
+        const diff = Math.abs(new Date(item.id + 'T00:00:00') - now);
+        if (diff < bestDiff) { bestDiff = diff; best = item; }
+      });
+      return best ? best.id : dateStr;
     }
 
     let activeSelectedDayId = getTodayId();
-    const TODAY_ID = getTodayId();
+    let TODAY_ID = getTodayId();
 
     function renderDayPills() {
       const container = document.getElementById('dayPillsContainer');
@@ -850,7 +972,7 @@
         const todayClass = isToday ? 'today' : '';
         const todayBadge = isToday 
           ? '<span class="badge-pill badge-today">오늘 저녁</span>' 
-          : `<span class="badge-pill ${meal.badge.includes('완판') || meal.badge.includes('15분') ? 'badge-green' : 'badge-gray'}">${meal.badge}</span>`;
+          : `<span class="badge-pill ${meal.badge.includes('완판') || meal.badge.includes('15분') || meal.badge.includes('완료') ? 'badge-green' : 'badge-gray'}">${meal.badge}</span>`;
 
         const tagsHtml = meal.tags.map(t => `<span class="day-tag">${t}</span>`).join('');
 
@@ -955,6 +1077,41 @@
       renderWeeklyCards();
       checkHash();
       initChecklist();
+
+      // 시트 설정이 있으면 헤더의 시트 바로가기 버튼 노출
+      if (SHEET_CSV_URL) {
+        const btn = document.getElementById('sheetLinkBtn');
+        if (btn) {
+          btn.href = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit?gid=${SHEET_GID}#gid=${SHEET_GID}`;
+          btn.style.display = '';
+        }
+      }
+
+      // 구글 스프레드시트에서 식단 불러오기 (실패 시 내장 데이터 유지)
+      loadMealsFromSheet()
+        .then(meals => {
+          MEALS_DATA.length = 0;
+          meals.forEach(m => MEALS_DATA.push(m));
+          TODAY_ID = getTodayId();
+          activeSelectedDayId = TODAY_ID;
+          renderDayPills();
+          renderRecipe();
+          renderWeeklyCards();
+          const li = document.getElementById('live-indicator');
+          if (li) {
+            li.textContent = '구글 시트 연동';
+            li.style.background = '#e8f5e9';
+            li.style.color = 'var(--primary)';
+          }
+        })
+        .catch(err => {
+          console.warn('[시트 연동 실패] 내장 데이터로 표시합니다:', err);
+          const li = document.getElementById('live-indicator');
+          if (li) {
+            li.textContent = '오프라인 데이터';
+            li.title = '구글 시트 연결 실패: ' + err.message;
+          }
+        });
     });
   </script>
 </body>
