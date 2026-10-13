@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>우리 가족 식단 & 장바구니 통합 대시보드</title>
+  <style>
+    :root {
+      --primary: #2d6a4f;
+      --primary-light: #e8f5e9;
+      --primary-dark: #1b4332;
+      --accent: #d95d39;
+      --accent-light: #fbeee9;
+      --bg: #f8f9fa;
+      --card-bg: #ffffff;
+      --text: #212529;
+      --text-muted: #6c757d;
+      --border: #e9ecef;
+      --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      --radius: 14px;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 90px;
+    }
+    header {
+      background: white;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 14px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .header-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--primary-dark);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .header-badge {
+      font-size: 0.75rem;
+      background: var(--primary-light);
+      color: var(--primary);
+      padding: 3px 8px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+    .sheet-link-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      color: var(--primary);
+      text-decoration: none;
+      background: var(--primary-light);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .sheet-link-btn:hover { background: #c8e6c9; }
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+    /* Top Segmented Navigation */
+    .top-tab-bar {
+      display: flex;
+      background: #e9ecef;
+      padding: 4px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      gap: 4px;
+    }
+    .top-tab-btn {
+      flex: 1;
+      border: none;
+      background: none;
+      padding: 10px 0;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .top-tab-btn.active {
+      background: white;
+      color: var(--primary-dark);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      font-weight: 700;
+    }
+    /* View Switcher */
+    .view-panel {
+      display: none;
+      animation: fadeIn 0.2s ease-in-out;
+    }
+    .view-panel.active {
+      display: block;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    /* Day Selector Carousel / Pills */
+    .day-selector-wrapper {
+      margin-bottom: 14px;
+    }
+    .day-selector-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .day-pills {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+    .day-pills::-webkit-scrollbar { display: none; }
+    .day-pill {
+      flex: 0 0 auto;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #495057;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      transition: all 0.15s;
+    }
+    .day-pill.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+      box-shadow: 0 3px 8px rgba(45, 106, 79, 0.25);
+    }
+    .day-pill.is-today .pill-day {
+      color: var(--accent);
+    }
+    .day-pill.active.is-today .pill-day {
+      color: #ffccbc;
+    }
+    .pill-day { font-size: 0.88rem; font-weight: 700; }
+    .pill-date { font-size: 0.72rem; opacity: 0.85; }
+
+    /* Bottom Navigation Bar */
+    .nav-tabs {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-around;
+      padding: 8px 12px;
+      z-index: 1000;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    }
+    .nav-tab-btn {
+      flex: 1;
+      border: none;
+      background: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      padding: 6px 0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .nav-tab-btn.active {
+      color: var(--primary);
+    }
+    .nav-tab-btn svg {
+      width: 22px;
+      height: 22px;
+      fill: currentColor;
+    }
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+    }
+    .hero-banner {
+      background: linear-gradient(135deg, #2d6a4f, #1b4332);
+      color: white;
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 16px;
+      box-shadow: 0 6px 16px rgba(45, 106, 79, 0.2);
+    }
+    .hero-banner.tuesday {
+      background: linear-gradient(135deg, #2d6a4f, #1e5138);
+    }
+    .hero-date { font-size: 0.85rem; opacity: 0.9; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+    .hero-today-tag {
+      background: var(--accent);
+      color: white;
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 12px;
+      font-weight: 700;
+    }
+    .hero-title { font-size: 1.35rem; font-weight: 800; line-height: 1.35; margin-bottom: 12px; }
+    .hero-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .hero-tag { background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(4px); padding: 4px 10px; border-radius: 16px; font-size: 0.75rem; font-weight: 600; }
+    .section-headline {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--primary-dark);
+    }
+    .ingredient-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .ingredient-item {
+      background: #f8f9fa;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #edf2f7;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+    }
+    .ingredient-name { font-weight: 600; color: #333; }
+    .ingredient-qty { color: var(--text-muted); font-size: 0.8rem; }
+    .health-box {
+      background: #f0f7f4;
+      border-left: 4px solid var(--primary);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 0.85rem;
+      color: #2d4a3e;
+      line-height: 1.5;
+    }
+    .step-list { display: flex; flex-direction: column; gap: 12px; }
+    .step-item {
+      display: flex;
+      gap: 14px;
+      padding: 14px;
+      background: #fafafa;
+      border-radius: 10px;
+      border-left: 4px solid var(--primary);
+    }
+    .step-num {
+      width: 26px;
+      height: 26px;
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.82rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .step-content h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; color: #2b2d42; }
+    .step-content p { font-size: 0.88rem; color: #4a5568; line-height: 1.5; }
+    .step-tip { margin-top: 6px; font-size: 0.8rem; color: var(--accent); font-weight: 600; }
+    .day-card {
+      background: white;
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 12px;
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .day-card:hover {
+      border-color: #b7e4c7;
+    }
+    .day-card.today { border: 2px solid var(--accent); background: #fffdfc; }
+    .day-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .day-meta { display: flex; align-items: center; gap: 8px; }
+    .day-name { font-weight: 700; font-size: 1rem; }
+    .day-date { font-size: 0.82rem; color: var(--text-muted); }
+    .day-menu-title { font-size: 1.05rem; font-weight: 700; color: #1a202c; margin-bottom: 6px; }
+    .day-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .day-tag { font-size: 0.75rem; padding: 2px 8px; border-radius: 6px; background: #edf2f7; color: #4a5568; }
+    .badge-pill { font-size: 0.75rem; font-weight: 600; padding: 3px 10px; border-radius: 20px; }
+    .badge-today { background: var(--accent); color: white; }
+    .badge-green { background: var(--primary-light); color: var(--primary); }
+    .badge-gray { background: #e9ecef; color: #495057; }
+    .checklist-category { margin-bottom: 18px; }
+    .category-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--primary-dark);
+      padding-bottom: 6px;
+      border-bottom: 2px solid var(--primary-light);
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .checklist-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 12px;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 6px;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s;
+    }
+    .checklist-item.checked { background: #f1f3f5; text-decoration: line-through; color: #adb5bd; }
+    .checklist-left { display: flex; align-items: center; gap: 10px; }
+    .custom-checkbox {
+      width: 20px;
+      height: 20px;
+      border-radius: 5px;
+      border: 2px solid #ced4da;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .checklist-item.checked .custom-checkbox { background: var(--primary); border-color: var(--primary); }
+    .custom-checkbox svg { display: none; width: 13px; height: 13px; fill: white; }
+    .checklist-item.checked .custom-checkbox svg { display: block; }
+    .item-label { font-size: 0.92rem; font-weight: 600; }
+    .item-sub { font-size: 0.78rem; color: var(--text-muted); }
+    .status-badge { font-size: 0.72rem; padding: 2px 7px; border-radius: 6px; font-weight: 600; }
+    .status-bought { background: #e2f0d9; color: #385723; }
+    .status-shipping { background: #fff2cc; color: #b25900; }
+    .status-planned { background: #e8f4f8; color: #176b87; }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="header-title">
+      <span>🥗 우리 가족 식단 & 장바구니</span>
+      <span class="header-badge" id="live-indicator">로컬 연동</span>
+    </div>
+    <!-- 공개 레포지토리 배포용 링크 (필요 시 실제 시트 주소로 교체) -->
+    <a href="#" target="_blank" rel="noopener noreferrer" class="sheet-link-btn" title="구글 스프레드시트 바로가기">
+      <svg width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H6v-2h3v2zm0-4H6v-2h3v2zm0-4H6V7h3v2zm9 8h-7v-2h7v2zm0-4h-7v-2h7v2zm0-4h-7V7h7v2z"/></svg>
+      구글 시트
+    </a>
+  </header>
+
+  <div class="container">
+    <!-- Top Segmented Navigation -->
+    <div class="top-tab-bar">
+      <button class="top-tab-btn active" id="top-btn-today" onclick="navigateTo('today')">🍳 오늘의 메뉴</button>
+      <button class="top-tab-btn" id="top-btn-week" onclick="navigateTo('week')">📅 이번주 식단</button>
+      <button class="top-tab-btn" id="top-btn-cart" onclick="navigateTo('cart')">🛒 장바구니</button>
+    </div>
+
+    <!-- PANEL 1: 오늘의 메뉴 & 요일별 레시피 -->
+    <main id="panel-today" class="view-panel active">
+      <div class="day-selector-wrapper">
+        <div class="day-selector-title">
+          <span>요일별 레시피 바로보기</span>
+          <span id="current-date-text" style="font-weight: normal; color: var(--primary);"></span>
+        </div>
+        <div class="day-pills" id="dayPillsContainer"></div>
+      </div>
+
+      <div id="recipeContainer"></div>
+    </main>
+
+    <!-- PANEL 2: 이번주 식단표 -->
+    <main id="panel-week" class="view-panel">
+      <div class="card" style="margin-bottom: 14px; background: #f0f7f4; border: 1px solid #c8e6c9;">
+        <div style="font-size: 0.88rem; color: #2d6a4f; font-weight: 600;">
+          🌟 <strong>식단 철칙</strong>: 단백질 매일 교대 (어류 ➡ 돈육 ➡ 해물 ➡ 돈육 ➡ 해물) & 15분 완성 & 100% 뼈 없음
+        </div>
+      </div>
+
+      <div id="weeklyCardsContainer"></div>
+    </main>
+
+    <!-- PANEL 3: 장바구니 체크리스트 -->
+    <main id="panel-cart" class="view-panel">
+      <div class="card" style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="font-size: 0.95rem; font-weight: 700;">실시간 구매 상태</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted);" id="cartSummary">총 9개 품목 (0개 완료)</div>
+        </div>
+        <button onclick="resetChecklist()" style="background: none; border: 1px solid var(--border); padding: 5px 10px; border-radius: 6px; font-size: 0.75rem; color: #6c757d; cursor: pointer;">초기화</button>
+      </div>
+
+      <!-- 정육 코너 -->
+      <div class="checklist-category">
+        <div class="category-title">
+          <span>🥩 정육 코너</span>
+          <span style="font-size: 0.75rem; font-weight: normal; color: var(--text-muted);">100% 뼈 없음</span>
+        </div>
+        <div class="checklist-item" onclick="toggleItem(this, 'pork_neck_1kg')">
+          <div class="checklist-left">
+            <div class="custom-checkbox"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+            <div>
+              <div class="item-label">돼지고기 목살 (구이용) 1kg</div>
+              <div class="item-sub">화요일 600g 구이 / 목요일 400g 단짠볶음 분할 완판</div>
+            </div>
+          </div>
+          <span class="status-badge status-bought">주문 완료</span>
+        </div>
+        <div class="checklist-item" onclick="toggleItem(this, 'sundubu_pack')">
+          <div class="checklist-left">
+            <div class="custom-checkbox"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+            <div>
+              <div class="item-label">순두부 & 해물순두부 소스</div>
+              <div class="item-sub">수요일 새우·오징어 순두부찌개용</div>
+            </div>
+          </div>
+          <span class="status-badge status-bought">구매 완료</span>
+        </div>
+      </div>
+
+      <!-- 채소 코너 -->
+      <div class="checklist-category">
+        <div class="category-title">
+          <span>🌿 채소 코너</span>
+          <span style="font-size: 0.75rem; font-weight: normal; color: var(--text-muted);">신선 & 고지혈증 케어</span>
+        </div>
+        <div class="checklist-item" onclick="toggleItem(this, 'minari')">
+          <div class="checklist-left">
+            <div class="custom-checkbox"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+            <div>
+              <div class="item-label">미나리 1단</div>
+              <div class="item-sub">화요일 목살 기름에 살짝 굽기용</div>
+            </div>
+          </div>
+          <span class="status-badge status-bought">보관 중</span>
+        </div>
+        <div class="checklist-item" onclick="toggleItem(this, 'cucumber')">
+          <div class="checklist-left">
+            <div class="custom-checkbox"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+            <div>
+              <div class="item-label">백오이(다다기오이) 1봉</div>
+              <div class="item-sub">화요일 생오이 쌈장 스틱 & 비빔면 고명</div>
+            </div>
+          </div>
+          <span class="status-badge status-bought">보관 중</span>
+        </div>
+        <div class="checklist-item" onclick="toggleItem(this, 'ssam')">
+          <div class="checklist-left">
+            <div class="custom-checkbox"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+            <div>
+              <div class="item-label">모듬 쌈채소 1봉 (상추, 깻잎)</div>
+              <div class="item-sub">화요일 목살 쌈용</div>
+            </div>
+          </div>
+          <span class="status-badge status-bought">보관 중</span>
+        </div>
+        <div class="checklist-item" onclick="toggleItem(this, 'king_oyster')">
+          <div class="checklist-left">
+            <div class="custom-checkbox"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+            <div>
+              <div class="item-label">새송이버섯 (보유분)</div>
+              <div class="item-sub">화요일 목살 구이 & 수요일 순두부찌개 투하</div>
+            </div>
+          </div>
+          <span class="status-badge status-bought">보관 중</span>
+        </div>
+        <div class="checklist-item" onclick="toggleItem(this, 'onion')">
+          <div class="checklist-left">
+            <div class="custom-checkbox"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+            <div>
+              <div class="item-label">양파 1망 (소포장)</div>
+              <div class="item-sub">순두부찌개 단맛 & 목요일 목살볶음용</div>
+            </div>
+          </div>
+          <span class="status-badge status-bought">보관 중</span>
+        </div>
+      </div>
+
+      <!-- 과일 코너 -->
+      <div class="checklist-category">
+        <div class="category-title">
+          <span>🍎 과일 코너</span>
+          <span style="font-size: 0.75rem; font-weight: normal; color: var(--text-muted);">초3 아침 루틴</span>
+        </div>
+        <div class="checklist-item" onclick="toggleItem(this, 'apple')">
+          <div class="checklist-left">
+            <div class="custom-checkbox"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+            <div>
+              <div class="item-label">가을 햇사과 (택배 주문 완료)</div>
+              <div class="item-sub">아침 백설기 곁들임 & 펙틴 식이섬유</div>
+            </div>
+          </div>
+          <span class="status-badge status-shipping">배송 중</span>
+        </div>
+        <div class="checklist-item" onclick="toggleItem(this, 'tangerine')">
+          <div class="checklist-left">
+            <div class="custom-checkbox"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+            <div>
+              <div class="item-label">제주 극조생 감귤 (택배 주문 완료)</div>
+              <div class="item-sub">초간편 아침 햇귤 비타민 충전</div>
+            </div>
+          </div>
+          <span class="status-badge status-shipping">배송 중</span>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Bottom Navigation Bar -->
+  <nav class="nav-tabs">
+    <button class="nav-tab-btn active" id="bot-btn-today" onclick="navigateTo('today')">
+      <svg viewBox="0 0 24 24"><path d="M8.1 13.34l2.83-2.83L3.91 3.5c-1.56 1.56-1.56 4.09 0 5.66l4.19 4.18zm6.78-1.81c1.53.71 3.68.21 5.27-1.38 1.91-1.91 2.28-4.65.81-6.12-1.46-1.46-4.2-1.1-6.12.81-1.59 1.59-2.09 3.74-1.38 5.27L3.7 19.87l1.41 1.41 9.77-9.75z"/></svg>
+      오늘의 메뉴
+    </button>
+    <button class="nav-tab-btn" id="bot-btn-week" onclick="navigateTo('week')">
+      <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>
+      이번주 식단
+    </button>
+    <button class="nav-tab-btn" id="bot-btn-cart" onclick="navigateTo('cart')">
+      <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+      장바구니
+    </button>
+  </nav>
+
+  <script>
+    // Weekly Meals Database
+    const MEALS_DATA = [
+      {
+        id: "2026-10-12",
+        dayName: "월요일",
+        dateStr: "10/12",
+        fullDateStr: "2026. 10. 12 (월요일)",
+        badge: "냉파 15분컷",
+        title: "[냉파] 순살 고등어 에프 구이 & 사골 배추된장국",
+        subtitle: "일요일에 끓여둔 된장국 데우기만 하면 끝! 에어프라이어에 냉장고 고등어만 굽는 초간단 백반.",
+        tags: ["🐟 순살 고등어 (오메가-3)", "🍲 일요일 국 데우기 (조리 0분)", "지출 0원 완판"],
+        ingredients: [
+          { name: "순살 고등어", qty: "2~3토막" },
+          { name: "사골 배추된장국", qty: "어제 잔여분" },
+          { name: "식용유/들기름", qty: "1작은술" },
+          { name: "조미김, 김치", qty: "적당량" }
+        ],
+        healthInfo: "• <strong>오메가-3 폭탄</strong>: 고등어의 EPA/DHA가 혈중 중성지방과 콜레스테롤을 낮춰주는 혈관 청소 식단.<br>• <strong>조리 부담 제로</strong>: 피로한 월요일 저녁에 국은 데우고 생선만 에프 180도 13분 굽기.",
+        steps: [
+          { title: "고등어 물기 닦고 칼집 넣기", desc: "키친타월로 물기 닦고 껍질 쪽에 칼집 2~3개 살짝 넣기.", tip: "★ 물기를 닦아야 비린내가 날아가고 바삭해집니다." },
+          { title: "에어프라이어 180℃ 12~13분", desc: "종이호일 깔고 껍질이 위를 향하게 올린 뒤 식용유 살짝 발라 굽기.", tip: "★ 중간에 뒤집지 않아도 겉바속촉 완성!" },
+          { title: "국 데우기 & 상차림", desc: "고등어 익는 마지막 3분 동안 사골 배추된장국 보글보글 데워 상에 내기.", tip: "★ 15분 만에 완벽한 한식 백반 완성!" }
+        ]
+      },
+      {
+        id: "2026-10-13",
+        dayName: "화요일",
+        dateStr: "10/13",
+        fullDateStr: "2026. 10. 13 (화요일) 저녁 만찬",
+        badge: "원팬 파티",
+        title: "돼지고기 목살 소금구이 & 구운 미나리 & 생오이 스틱",
+        subtitle: "찌개 없이 목살과 쌈에만 집중! 향긋한 가을 미나리와 아삭한 오이스틱, 별미 비빔면 1개 곁들임.",
+        tags: ["⏱ 15분 완성", "🥩 목살 600g (1kg 중 60% 소진)", "🌿 구운 미나리 1단", "🥒 생오이 스틱", "🍜 비빔면 1개 곁들임", "🔪 자투리 50g 킵"],
+        ingredients: [
+          { name: "돼지 목살 (구이용)", qty: "600g" },
+          { name: "미나리", qty: "1단 (5cm 썰기)" },
+          { name: "백오이", qty: "1봉 (스틱 & 채썰기)" },
+          { name: "모듬 쌈채소", qty: "1봉 (상추, 깻잎)" },
+          { name: "새송이버섯", qty: "1개 (편 썰기)" },
+          { name: "비빔면", qty: "1개 (사이드용)" },
+          { name: "쌈장, 김치", qty: "적당량" }
+        ],
+        healthInfo: "• <strong>포화지방 절감 & 혈관 케어</strong>: 삼겹살 대비 기름기가 적은 목살을 굽고, 미나리와 생오이의 풍부한 칼륨·식이섬유가 나트륨과 콜레스테롤 흡수를 억제합니다.<br>• <strong>자투리 50g 분리</strong>: 목살 굽기 전 비계 섞인 자투리 50g을 다져두면 내일 순두부찌개가 짬뽕 전문점 맛으로 변신합니다.",
+        steps: [
+          { 
+            title: "재료 손질 & 비빔면 삶기 (5분)", 
+            desc: "오이는 쌈장 스틱용과 비빔면 고명용(채썰기)으로 썰고, 미나리는 씻어 5cm 길이로 자릅니다. 냄비에 물을 끓여 비빔면 면을 삶아 찬물에 헹궈 비벼둡니다.", 
+            tip: "★ 중요: 목살 굽기 전 자투리 50g(밥숟가락 2~3개)을 쫑쫑 다져 밀폐용기에 담아 냉장 보관하세요! (내일 순두부찌개 밑국물용)" 
+          },
+          { 
+            title: "원팬 목살 & 새송이버섯 노릇하게 굽기 (6분)", 
+            desc: "팬을 센 불로 달군 뒤 목살 600g과 편 썬 새송이버섯을 올리고 소금·후추를 살짝 칩니다. 앞뒤로 노릇하게 겉바속촉으로 굽습니다.", 
+            tip: "★ 고기에서 나오는 고소한 기름에 새송이버섯이 맛있게 구워집니다." 
+          },
+          { 
+            title: "미나리 투하 & 30초 숨 죽이기 (1분)", 
+            desc: "고기가 90% 이상 익었을 때 고기 기름이 모인 쪽에 썰어둔 미나리를 듬뿍 올리고 센 불에서 30초~1분만 살짝 숨을 죽여 불을 끕니다.", 
+            tip: "★ 미나리를 너무 오래 익히면 질겨지므로 숨만 살짝 죽여야 향긋하고 아삭합니다." 
+          },
+          { 
+            title: "상차림 & 육쌈비빔면 즐기기 (2분)", 
+            desc: "구운 목살과 미나리를 접시에 담고, 생오이 스틱, 쌈채소, 그리고 오이 고명을 얹은 시원한 비빔면을 함께 상에 올립니다.", 
+            tip: "★ 뜨거운 목살에 차가운 비빔면을 돌돌 말아 드시면 최고의 별미입니다!" 
+          }
+        ]
+      },
+      {
+        id: "2026-10-14",
+        dayName: "수요일",
+        dateStr: "10/14",
+        fullDateStr: "2026. 10. 14 (수요일) 저녁",
+        badge: "냉파 & 속편한 단백질",
+        title: "[냉파] 통통 새우·오징어 해물 새송이 순두부찌개 & 대왕 계란말이",
+        subtitle: "닭다리살 제외! 목살 다음 날 육류 쉬어가기. 시판 해물순두부 소스 + 냉동실 큼직 통통 새우 + 오징어 + 새송이 버섯 완판.",
+        tags: ["⏱ 12분 완성", "🦐 통통 큼직 새우", "🦑 냉동실 손질 오징어", "🍄 쫄깃 새송이버섯", "🥚 특란 대왕 계란말이", "지출 0원 냉파"],
+        ingredients: [
+          { name: "순두부 & 해물소스", qty: "각 1봉 (구매완료)" },
+          { name: "통통한 냉동 새우", qty: "10~15마리" },
+          { name: "냉동실 손질 오징어", qty: "몸통 반 마리" },
+          { name: "새송이버섯", qty: "1개 (편/깍둑썰기)" },
+          { name: "어제 킵한 목살", qty: "다진 것 50g" },
+          { name: "양파 / 대파", qty: "1/2개 / 1/2대" },
+          { name: "특란 (계란)", qty: "찌개용 1개, 계란말이 4~5개" }
+        ],
+        healthInfo: "• <strong>타우린 & 저지방 고단백</strong>: 새우와 오징어의 풍부한 타우린이 혈관을 정화하고, 부드러운 순두부와 계란이 속을 편안하게 달래줍니다.<br>• <strong>초3 아이 맞춤</strong>: 양파 반 개를 넣어 매운맛을 부드럽게 감싸고, 계란말이를 곁들여 아이 밥반찬 완벽 보충.",
+        steps: [
+          { title: "해물 해동 & 버섯 손질 (3분)", desc: "냉동 새우와 썬 오징어를 찬물에 맛술 1큰술 넣고 5분 담가 해동. 새송이는 얇게 편 썰고 양파는 채 썰기.", tip: "★ 새우가 크고 통통해서 국물에 진한 감칠맛이 폭발합니다." },
+          { title: "다진 목살 볶고 국물 안치기 (3분)", desc: "냄비에 참기름 반 큰술 두르고 어제 다져둔 목살 50g을 달달 볶다가, 물과 해물순두부 소스, 양파, 새송이를 넣고 센 불에 끓이기.", tip: "★ 다진 고기를 먼저 볶으면 짬뽕 전문점 같은 깊은 불맛 육수가 완성됩니다." },
+          { title: "순두부 & 새우·오징어 투하 (3분)", desc: "국물이 끓으면 순두부를 큼직하게 뚝뚝 잘라 넣고, 해동한 새우와 오징어를 넣어 2~3분간만 센 불에 바글바글 끓이기.", tip: "★ 큼직한 새우는 2~3분만 익혀야 질겨지지 않고 육즙이 팡 터집니다." },
+          { title: "달걀 톡 & 계란말이 곁들이기 (3분)", desc: "대파를 넣고 달걀 1개를 톡 깨 넣어 불을 끕니다. 옆 팬에서 부쳐낸 폭신한 대왕 계란말이와 함께 상에 냅니다.", tip: "★ 칼칼한 순두부찌개에 고소한 계란말이는 찰떡궁합입니다." }
+        ]
+      },
+      {
+        id: "2026-10-15",
+        dayName: "목요일",
+        dateStr: "10/15",
+        fullDateStr: "2026. 10. 15 (목요일) 저녁",
+        badge: "목살 400g 완판",
+        title: "단짠 양념 목살 볶음 (돼지갈비맛, 양파 듬뿍)",
+        subtitle: "소고기 스테이크 제외! 화요일에 남겨둔 목살 400g과 양파 1~2개를 간장·올리고당에 달달 볶아 100% 소진.",
+        tags: ["⏱ 15분 완성", "🥩 남은 목살 400g 완판", "🧅 양파 듬뿍 퀘르세틴", "100% 뼈 없음", "아이 밥도둑"],
+        ingredients: [
+          { name: "돼지 목살 (잔여)", qty: "400g (한 입 크기)" },
+          { name: "양파", qty: "1~2개 (굵게 채썰기)" },
+          { name: "대파", qty: "1대" },
+          { name: "양념장", qty: "진간장 3T, 올리고당 2T, 다진마늘 1T, 참기름 1T, 후추" }
+        ],
+        healthInfo: "• <strong>양파의 퀘르세틴</strong>: 양파를 대량으로 볶아 고기 기름을 산화 방지하고 혈관 벽을 튼튼하게 보호.<br>• <strong>단짠 갈비맛</strong>: 화요일 소금구이와 조리법을 완전히 바꾸어 질리지 않고 아이가 밥 두 공기 비우는 메뉴.",
+        steps: [
+          { title: "목살 한 입 크기 썰기 & 밑간", desc: "남은 목살 400g을 한 입 크기로 썰고 양념장(간장 3, 올리고당 2, 마늘 1, 맛술 1)에 5분간 가볍게 조물조물 버무리기.", tip: "★ 얇게 썰어 양념하면 재워둘 필요 없이 바로 볶을 수 있습니다." },
+          { title: "팬에 센 불로 고기 볶기", desc: "팬을 센 불로 달군 뒤 양념된 목살을 넣고 겉면이 노릇해질 때까지 3분간 빠르게 볶기.", tip: "★ 센 불에 볶아야 물이 생기지 않고 불맛이 입혀집니다." },
+          { title: "양파 듬뿍 넣고 졸이듯 볶기", desc: "굵게 채 썬 양파를 듬뿍 넣고 중불에서 2~3분간 양파가 투명해질 때까지 볶다가 대파, 통깨, 참기름 둘러 완성.", tip: "★ 밥 위에 국물과 함께 얹어 덮밥처럼 비벼 먹으면 꿀맛!" }
+        ]
+      },
+      {
+        id: "2026-10-16",
+        dayName: "금요일",
+        dateStr: "10/16",
+        fullDateStr: "2026. 10. 16 (금요일) 저녁",
+        badge: "냉동실 완판",
+        title: "[냉파 Day] 매콤달콤 오징어 볶음 (또는 해물 부추전)",
+        subtitle: "냉동실 남은 손질 오징어 100% 완판! 타우린과 불포화지방산이 풍부한 금요일 밤 특식.",
+        tags: ["⏱ 15분 완성", "🦑 손질 오징어 완판", "불금 특식", "지출 0원 냉파"],
+        ingredients: [
+          { name: "손질 오징어", qty: "남은 전량 (1~2마리)" },
+          { name: "양파 / 대파", qty: "1개 / 1대" },
+          { name: "양념장", qty: "고추장 1.5T, 고춧가루 1T, 간장 1.5T, 올리고당 1.5T, 다진마늘 1T" }
+        ],
+        healthInfo: "• <strong>타우린 충전</strong>: 한 주의 피로를 씻어주는 고단백 저칼로리 해물 식단.",
+        steps: [
+          { title: "오징어 칼집 넣고 썰기", desc: "오징어 몸통에 다이아몬드 칼집을 넣고 먹기 좋은 크기로 썰기.", tip: "★ 칼집을 넣으면 양념이 쏙 배고 식감이 연해집니다." },
+          { title: "채소와 함께 센 불에 3분 볶기", desc: "팬에 기름 두르고 양파, 파 볶다가 오징어와 양념장 넣고 센 불에 2~3분간 재빨리 볶아내기.", tip: "★ 오래 볶으면 질겨지므로 센 불에 수분을 날리며 빠르게 볶는 것이 핵심!" }
+        ]
+      },
+      {
+        id: "2026-10-17",
+        dayName: "토요일",
+        dateStr: "10/17",
+        fullDateStr: "2026. 10. 17 (토요일) 저녁",
+        badge: "주방 휴업",
+        title: "주말 가족 특식 (외식 / 배달 / 자유식)",
+        subtitle: "한 주 동안 집밥을 훌륭하게 완판한 가족을 위한 주말 힐링의 날.",
+        tags: ["주방 완전 오프", "가족 외식", "편안한 휴식"],
+        ingredients: [
+          { name: "메뉴 협의", qty: "가족 선택" }
+        ],
+        healthInfo: "• 편안하게 즐기시되, 튀김보다는 채소와 단백질이 풍부한 구이나 찜류 권장.",
+        steps: [
+          { title: "가족과 함께 메뉴 고르기", desc: "한 주간 고생한 요리사를 위해 주방 불을 끄고 즐거운 외식 즐기기.", tip: "★ 주말 충전!" }
+        ]
+      },
+      {
+        id: "2026-10-18",
+        dayName: "일요일",
+        dateStr: "10/18",
+        fullDateStr: "2026. 10. 18 (일요일) 저녁",
+        badge: "냉파 & 마무리",
+        title: "주말 냉파 & 편안한 집밥",
+        subtitle: "냉장고 속 남은 자투리 재료를 깔끔하게 소진하는 일요일 마무리 집밥.",
+        tags: ["냉장고 파먹기", "15분 컷", "식재료 Zero Waste"],
+        ingredients: [
+          { name: "냉장고 잔여 재료", qty: "전량 소진" }
+        ],
+        healthInfo: "• 다음 주 장보기를 위해 냉장고를 깨끗하게 비우는 가벼운 식단.",
+        steps: [
+          { title: "자투리 재료 모아 끓이기/볶기", desc: "냉장고 속 남은 채소와 계란으로 편안하게 한 끼 해결.", tip: "★ 다음 주 식단표 작성 준비!" }
+        ]
+      }
+    ];
+
+    function getTodayId() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      const dateStr = `${y}-${m}-${d}`;
+      
+      const exists = MEALS_DATA.find(item => item.id === dateStr);
+      return exists ? dateStr : "2026-10-13";
+    }
+
+    let activeSelectedDayId = getTodayId();
+    const TODAY_ID = getTodayId();
+
+    function renderDayPills() {
+      const container = document.getElementById('dayPillsContainer');
+      const todayItem = MEALS_DATA.find(m => m.id === TODAY_ID);
+      document.getElementById('current-date-text').innerText = `오늘: ${todayItem ? todayItem.dayName + ' (' + todayItem.dateStr + ')' : ''}`;
+
+      let html = '';
+      MEALS_DATA.forEach(meal => {
+        const isSelected = meal.id === activeSelectedDayId ? 'active' : '';
+        const isToday = meal.id === TODAY_ID ? 'is-today' : '';
+        const todayLabel = meal.id === TODAY_ID ? '<span style="font-size:0.65rem; color:var(--accent); font-weight:bold;">● 오늘</span>' : '';
+        
+        html += `
+          <button class="day-pill ${isSelected} ${isToday}" onclick="selectDay('${meal.id}')">
+            <span class="pill-day">${meal.dayName.substring(0, 1)}</span>
+            <span class="pill-date">${meal.dateStr}</span>
+            ${todayLabel}
+          </button>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    function selectDay(dayId) {
+      activeSelectedDayId = dayId;
+      renderDayPills();
+      renderRecipe();
+    }
+
+    function renderRecipe() {
+      const meal = MEALS_DATA.find(m => m.id === activeSelectedDayId) || MEALS_DATA[1];
+      const isToday = meal.id === TODAY_ID;
+      const todayBadge = isToday ? '<span class="hero-today-tag">★ 오늘 확정 메뉴</span>' : '';
+
+      let tagsHtml = meal.tags.map(t => `<span class="hero-tag">${t}</span>`).join('');
+      let ingHtml = meal.ingredients.map(ing => `
+        <div class="ingredient-item">
+          <span class="ingredient-name">${ing.name}</span>
+          <span class="ingredient-qty">${ing.qty}</span>
+        </div>
+      `).join('');
+
+      let stepsHtml = meal.steps.map((st, idx) => `
+        <div class="step-item">
+          <div class="step-num">${idx + 1}</div>
+          <div class="step-content">
+            <h4>${st.title}</h4>
+            <p>${st.desc}</p>
+            ${st.tip ? `<div class="step-tip">${st.tip}</div>` : ''}
+          </div>
+        </div>
+      `).join('');
+
+      const html = `
+        <div class="hero-banner ${isToday ? 'tuesday' : ''}">
+          <div class="hero-date">
+            <span>${meal.fullDateStr}</span>
+            ${todayBadge}
+          </div>
+          <div class="hero-title">${meal.title}</div>
+          <div class="hero-tags">
+            ${tagsHtml}
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-headline">
+            <svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+            ${meal.dayName} 필수 식재료
+          </div>
+          <div class="ingredient-grid">
+            ${ingHtml}
+          </div>
+          <div class="health-box">
+            ${meal.healthInfo}
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-headline">
+            <svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5zm4 4h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+            실전 조리 가이드 (15분 완성 순서)
+          </div>
+          <div class="step-list">
+            ${stepsHtml}
+          </div>
+        </div>
+      `;
+
+      document.getElementById('recipeContainer').innerHTML = html;
+    }
+
+    function renderWeeklyCards() {
+      const container = document.getElementById('weeklyCardsContainer');
+      let html = '';
+
+      MEALS_DATA.forEach(meal => {
+        const isToday = meal.id === TODAY_ID;
+        const todayClass = isToday ? 'today' : '';
+        const todayBadge = isToday 
+          ? '<span class="badge-pill badge-today">오늘 저녁</span>' 
+          : `<span class="badge-pill ${meal.badge.includes('완판') || meal.badge.includes('15분') ? 'badge-green' : 'badge-gray'}">${meal.badge}</span>`;
+
+        const tagsHtml = meal.tags.map(t => `<span class="day-tag">${t}</span>`).join('');
+
+        html += `
+          <div class="day-card ${todayClass}" onclick="jumpToRecipe('${meal.id}')">
+            <div class="day-card-header">
+              <div class="day-meta">
+                <span class="day-name" style="${isToday ? 'color: var(--accent);' : ''}">${meal.dayName}</span>
+                <span class="day-date">${meal.dateStr}</span>
+              </div>
+              ${todayBadge}
+            </div>
+            <div class="day-menu-title">${meal.title}</div>
+            <p style="font-size: 0.85rem; color: #6c757d; margin-top: 4px;">${meal.subtitle}</p>
+            <div class="day-tags">
+              ${tagsHtml}
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    function jumpToRecipe(dayId) {
+      selectDay(dayId);
+      navigateTo('today');
+    }
+
+    function navigateTo(targetTab) {
+      document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+      const activePanel = document.getElementById('panel-' + targetTab);
+      if (activePanel) activePanel.classList.add('active');
+
+      document.querySelectorAll('.top-tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.remove('active'));
+
+      const topBtn = document.getElementById('top-btn-' + targetTab);
+      const botBtn = document.getElementById('bot-btn-' + targetTab);
+      if (topBtn) topBtn.classList.add('active');
+      if (botBtn) botBtn.classList.add('active');
+
+      try {
+        history.replaceState(null, null, '#' + targetTab);
+      } catch(e) {}
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function checkHash() {
+      const hash = window.location.hash.replace('#', '');
+      if (['today', 'week', 'cart'].includes(hash)) {
+        navigateTo(hash);
+      }
+    }
+
+    // 체크 토글 & LocalStorage 저장
+    function toggleItem(element, key) {
+      element.classList.toggle('checked');
+      const isChecked = element.classList.contains('checked');
+      localStorage.setItem('cart_' + key, isChecked ? '1' : '0');
+      updateCartSummary();
+    }
+
+    // onclick 키와 1:1 매핑하여 정확하게 상태 복원
+    function initChecklist() {
+      document.querySelectorAll('.checklist-item').forEach((el) => {
+        const match = el.getAttribute('onclick')?.match(/'([^']+)'/);
+        if (match && match[1]) {
+          const key = match[1];
+          const saved = localStorage.getItem('cart_' + key);
+          if (saved !== null) {
+            if (saved === '1') el.classList.add('checked');
+            else el.classList.remove('checked');
+          }
+        }
+      });
+      updateCartSummary();
+    }
+
+    function updateCartSummary() {
+      const total = document.querySelectorAll('.checklist-item').length;
+      const checked = document.querySelectorAll('.checklist-item.checked').length;
+      const summaryEl = document.getElementById('cartSummary');
+      if (summaryEl) summaryEl.innerText = `총 ${total}개 품목 (${checked}개 완료)`;
+    }
+
+    function resetChecklist() {
+      if (confirm('체크리스트 상태를 초기화하시겠습니까?')) {
+        document.querySelectorAll('.checklist-item').forEach(el => el.classList.remove('checked'));
+        // cart_ 접두사를 가진 LocalStorage 항목만 깔끔하게 제거
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('cart_')) localStorage.removeItem(key);
+        });
+        updateCartSummary();
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderDayPills();
+      renderRecipe();
+      renderWeeklyCards();
+      checkHash();
+      initChecklist();
+    });
+  </script>
+</body>
+</html>
