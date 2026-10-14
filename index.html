@@ -671,8 +671,31 @@
       }
     ];
 
-    let activeSelectedDayId = "2026-10-14";
-    const TODAY_ID = "2026-10-14";
+    function getTodayId() {
+  try {
+    const now = new Date();
+    const parts = new Intl.DateTimeFormat('ko-KR', {
+      timeZone: 'Asia/Seoul',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).formatToParts(now);
+
+    const y = parts.find(function(p) { return p.type === 'year'; }).value;
+    const m = parts.find(function(p) { return p.type === 'month'; }).value.padStart(2, '0');
+    const d = parts.find(function(p) { return p.type === 'day'; }).value.padStart(2, '0');
+    const todayStr = y + '-' + m + '-' + d;
+
+    const exists = MEALS_DATA.find(function(item) { return item.id === todayStr; });
+    if (exists) return todayStr;
+  } catch(e) {
+    console.warn('Timezone calculation fallback:', e);
+  }
+  return "2026-10-15"; // 목요일 (오늘) 기본값
+}
+
+const TODAY_ID = getTodayId();
+let activeSelectedDayId = TODAY_ID;
 
     function renderDayPills() {
       const container = document.getElementById('dayPillsContainer');
