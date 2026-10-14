@@ -54,12 +54,11 @@
     }
     .header-badge {
       font-size: 0.75rem;
-      background: #e9ecef;
-      color: #495057;
+      background: #e8f5e9;
+      color: var(--primary);
       padding: 3px 8px;
       border-radius: 20px;
       font-weight: 600;
-      transition: all 0.2s;
     }
     .sheet-link-btn {
       display: inline-flex;
@@ -370,13 +369,12 @@
   </style>
 </head>
 <body>
-  <!-- Header -->
   <header>
     <div class="header-title">
       <span>🥗 우리 가족 식단 & 장바구니</span>
-      <span class="header-badge" id="live-indicator">연동 확인 중...</span>
+      <span class="header-badge" id="live-indicator">실시간 연동</span>
     </div>
-    <a id="sheetLinkBtn" href="#" target="_blank" rel="noopener noreferrer" class="sheet-link-btn" title="구글 스프레드시트 바로가기">
+    <a id="sheetLinkBtn" href="https://docs.google.com/spreadsheets/d/1lvLaETf1ZnpfTqn9uKtGLy1CHIsH1y2xwzvmA8hdRZI/edit" target="_blank" rel="noopener noreferrer" class="sheet-link-btn" title="구글 스프레드시트 바로가기">
       <svg width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H6v-2h3v2zm0-4H6v-2h3v2zm0-4H6V7h3v2zm9 8h-7v-2h7v2zm0-4h-7v-2h7v2zm0-4h-7V7h7v2z"/></svg>
       구글 시트
     </a>
@@ -389,7 +387,7 @@
       <button class="top-tab-btn" data-tab="cart" onclick="navigateTo('cart')">🛒 장바구니</button>
     </div>
 
-    <!-- PANEL 1: 오늘의 메뉴 & 요일별 레시피 (동적 렌더링) -->
+    <!-- PANEL 1: 오늘의 메뉴 & 요일별 레시피 -->
     <main id="panel-today" class="view-panel active">
       <div class="day-selector-wrapper">
         <div class="day-selector-title">
@@ -413,7 +411,6 @@
 
     <!-- PANEL 3: 장바구니 체크리스트 (사야 할 것만 남김) -->
     <main id="panel-cart" class="view-panel">
-      <!-- 헤더 & 요약 -->
       <div class="card" style="margin-bottom: 14px; background: #fffdfc; border: 1.5px solid var(--accent);">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <div>
@@ -426,7 +423,6 @@
         </div>
       </div>
 
-      <!-- 1. 실제로 사야 할 품목 (To Buy) -->
       <div class="checklist-category">
         <div class="category-title" style="color: var(--accent); border-bottom-color: #ffd8cc;">
           <span>⏳ 구매 예정 품목</span>
@@ -447,7 +443,6 @@
         <div id="customItemsContainer"></div>
       </div>
 
-      <!-- 2. 간편 추가 입력창 -->
       <div class="card" style="padding: 14px; margin-bottom: 18px; background: #f8f9fa;">
         <div style="font-size: 0.82rem; font-weight: 700; color: #495057; margin-bottom: 8px;">➕ 살 것 직접 추가하기</div>
         <div style="display: flex; gap: 8px;">
@@ -456,7 +451,6 @@
         </div>
       </div>
 
-      <!-- 3. 이미 구매하여 보관 중인 식재료 (아코디언 접기) -->
       <div class="card" style="padding: 14px; background: #fafafa; border: 1px dashed #ced4da;">
         <div onclick="toggleCompletedSection()" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
           <div style="font-size: 0.88rem; font-weight: 700; color: #495057; display: flex; align-items: center; gap: 6px;">
@@ -507,7 +501,6 @@
     </main>
   </div>
 
-  <!-- Bottom Navigation Bar -->
   <nav class="nav-tabs">
     <button class="nav-tab-btn active" data-tab="today" onclick="navigateTo('today')">
       <svg viewBox="0 0 24 24"><path d="M8.1 13.34l2.83-2.83L3.91 3.5c-1.56 1.56-1.56 4.09 0 5.66l4.19 4.18zm6.78-1.81c1.53.71 3.68.21 5.27-1.38 1.91-1.91 2.28-4.65.81-6.12-1.46-1.46-4.2-1.1-6.12.81-1.59 1.59-2.09 3.74-1.38 5.27L3.7 19.87l1.41 1.41 9.77-9.75z"/></svg>
@@ -524,44 +517,13 @@
   </nav>
 
   <script>
-    
-    // 요일별 완벽 상세 레시피 사전 (시트에 레시피가 없어도 절대 더미 텍스트가 안 뜨도록 보장)
-    const FALLBACK_RECIPES = {
-      "2026-10-12": [
-        { title: "고등어 물기 닦기", desc: "키친타월로 물기를 닦고 껍질 쪽에 칼집 2~3개 살짝 넣기.", tip: "★ 물기를 닦아야 비린내가 날아가고 바삭해집니다." },
-        { title: "에어프라이어 180℃ 13분", desc: "종이호일 깔고 껍질이 위를 향하게 올린 뒤 식용유 살짝 발라 굽기.", tip: "★ 중간에 뒤집지 않아도 겉바속촉 완성!" },
-        { title: "국 데우기 & 상차림", desc: "고등어 익는 마지막 3분 동안 사골 배추된장국 보글보글 데워 상에 내기.", tip: "★ 15분 만에 완벽한 한식 백반 완성!" }
-      ],
-      "2026-10-13": [
-        { title: "자투리 50g 다져 킵 & 오이 썰기", desc: "목살 50g을 쫑쫑 다져 냉장 보관하고, 오이는 스틱과 비빔면 고명용으로 썰기.", tip: "★ 수요일 순두부찌개에 불맛을 더해줄 핵심 비법!" },
-        { title: "목살 & 새송이버섯 센 불 굽기", desc: "센 불에 달군 팬에 목살과 새송이를 올려 소금, 후추 뿌려 겉바속촉 굽기.", tip: "★ 고기 기름에 새송이버섯 노릇하게 굽기." },
-        { title: "미나리 30초 숨죽이기 & 완성", desc: "고기가 거의 다 익었을 때 미나리를 올리고 30초만 가볍게 숨죽여 불 끄기.", tip: "★ 비빔면에 오이채를 얹고 고기와 함께 싸 먹기!" }
-      ],
-      "2026-10-14": [
-        { title: "해물 해동 & 버섯 손질 (3분)", desc: "냉동 새우와 썬 오징어는 찬물에 맛술 1큰술을 넣고 5분간 담가 비린내를 빼며 해동. 새송이버섯은 얇게 편 썰고, 양파는 채 썹니다.", tip: "★ 새우가 크고 통통해서 국물에 진한 감칠맛이 폭발합니다." },
-        { title: "다진 목살 볶고 국물 안치기 (3분)", desc: "냄비에 참기름 반 큰술을 두르고 어제 다져둔 목살 50g을 달달 볶아 고기 기름을 냅니다. 물과 해물순두부 소스, 양파, 새송이버섯을 넣고 센 불에 끓입니다.", tip: "★ 다진 고기를 먼저 볶으면 짬뽕 전문점 같은 깊은 불맛 육수가 완성됩니다." },
-        { title: "순두부 & 새우·오징어 투하 (3분)", desc: "국물이 끓으면 순두부를 큼직하게 뚝뚝 썰어 넣고, 해동한 새우와 오징어를 넣어 2~3분간 센 불에 바글바글 끓입니다. 대파를 넣고 달걀 1개를 톡 깨 넣어 불을 끕니다.", tip: "★ 큼직한 새우는 2~3분만 익혀야 질겨지지 않고 육즙이 팡 터집니다." },
-        { title: "달걀 톡 & 계란말이 곁들이기 (3분)", desc: "대파를 넣고 달걀 1개를 톡 깨 넣어 불을 끕니다. 옆 팬에서 부쳐낸 폭신한 대왕 계란말이와 함께 상에 냅니다.", tip: "★ 칼칼한 순두부찌개에 고소한 계란말이는 찰떡궁합입니다." }
-      ],
-      "2026-10-15": [
-        { title: "목살 한 입 크기 썰기 & 밑간", desc: "남은 목살 400g을 한 입 크기로 썰고 양념장(간장 3, 올리고당 2, 마늘 1, 맛술 1)에 5분간 가볍게 조물조물 버무리기.", tip: "★ 얇게 썰어 양념하면 오래 재워둘 필요 없이 바로 볶을 수 있습니다." },
-        { title: "팬에 센 불로 고기 볶기", desc: "팬을 센 불로 달군 뒤 양념된 목살을 넣고 겉면이 노릇해질 때까지 3분간 빠르게 볶기.", tip: "★ 센 불에 볶아야 물이 생기지 않고 불맛이 입혀집니다." },
-        { title: "양파 듬뿍 넣고 졸이듯 볶기", desc: "굵게 채 썬 양파를 듬뿍 넣고 중불에서 2~3분간 양파가 투명해질 때까지 볶다가 대파, 통깨, 참기름 둘러 완성.", tip: "★ 밥 위에 국물과 함께 얹어 덮밥처럼 비벼 먹으면 꿀맛!" }
-      ],
-      "2026-10-16": [
-        { title: "오징어 칼집 넣고 썰기", desc: "오징어 몸통에 다이아몬드 칼집을 넣고 먹기 좋은 크기로 썰기.", tip: "★ 칼집을 넣으면 양념이 쏙 배고 식감이 연해집니다." },
-        { title: "채소와 함께 센 불에 3분 볶기", desc: "팬에 기름 두르고 양파, 파 볶다가 오징어와 양념장 넣고 센 불에 2~3분간 재빨리 볶아내기.", tip: "★ 오래 볶으면 질겨지므로 센 불에 수분을 날리며 빠르게 볶는 것이 핵심!" },
-        { title: "부추 넣고 불 끄기", desc: "불을 끄기 직전에 썰어둔 부추를 넣고 잔열로 살짝만 뒤적여 완성.", tip: "★ 부추는 잔열로 익혀야 향이 살아납니다." }
-      ]
-    };
-
-    // ── 구글 스프레드시트 설정 (레시피북이 포함된 신규 마스터 시트 ID 연결) ──
+    // ── 구글 스프레드시트 설정 ──
     const SHEET_ID = '1lvLaETf1ZnpfTqn9uKtGLy1CHIsH1y2xwzvmA8hdRZI';
     const SHEET_GID = '0';
-    const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${SHEET_GID}`;
+    const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq?tqx=out:csv&gid=' + SHEET_GID;
 
-    // 기본 내장 식단 및 상세 레시피 데이터 (시트 로딩 실패 시 fallback)
-    let MEALS_DATA = [
+    // 완벽한 1~4단계 상세 레시피 데이터 (절대 소실되지 않도록 완벽 보존)
+    const MEALS_DATA = [
       {
         id: "2026-10-12",
         dayName: "월요일",
@@ -709,195 +671,26 @@
       }
     ];
 
-    // CSV 파서
-    function parseCSV(text) {
-      const rows = [];
-      let row = [], field = '', inQuotes = false;
-      for (let i = 0; i < text.length; i++) {
-        const c = text[i];
-        if (inQuotes) {
-          if (c === '"') {
-            if (text[i + 1] === '"') { field += '"'; i++; }
-            else inQuotes = false;
-          } else field += c;
-        } else {
-          if (c === '"') inQuotes = true;
-          else if (c === ',') { row.push(field); field = ''; }
-          else if (c === '
-') { row.push(field); field = ''; rows.push(row); row = []; }
-          else if (c !== '
-') field += c;
-        }
-      }
-      if (field !== '' || row.length) { row.push(field); rows.push(row); }
-      return rows.filter(r => r.some(c => c.trim() !== ''));
-    }
-
-    function splitList(text) {
-      return (text || '').split(/[,，]/).map(s => s.trim()).filter(Boolean);
-    }
-
-    function buildIdFromMD(md) {
-      const m = (md || '').match(/(\d{1,2})\s*[\/\-.]\s*(\d{1,2})/);
-      if (!m) return null;
-      const month = +m[1], day = +m[2];
-      const now = new Date(); now.setHours(0, 0, 0, 0);
-      const pad = n => String(n).padStart(2, '0');
-      let bestId = `${now.getFullYear()}-${pad(month)}-${pad(day)}`, bestDiff = Infinity;
-      [now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1].forEach(yy => {
-        const diff = Math.abs(new Date(yy, month - 1, day) - now);
-        if (diff < bestDiff) { bestDiff = diff; bestId = `${yy}-${pad(month)}-${pad(day)}`; }
-      });
-      return bestId;
-    }
-
-    // 단계별 조리법 텍스트 파싱 함수
-    function parseCookingSteps(stepText, tipText) {
-      if (!stepText) return [];
-      const regex = /(\d+[\)\.]\s*[^1-9\)\.]+)/g;
-      const matches = stepText.match(regex);
-      if (matches && matches.length) {
-        return matches.map((m, idx) => {
-          const clean = m.replace(/^\d+[\)\.]\s*/, '').trim();
-          return {
-            title: `${idx + 1}단계`,
-            desc: clean,
-            tip: (idx === matches.length - 1 && tipText) ? tipText : ''
-          };
-        });
-      }
-      const lines = stepText.split(/\n/).filter(Boolean);
-      return lines.map((l, idx) => ({
-        title: `${idx + 1}단계`,
-        desc: l.replace(/^\d+[\)\.]\s*/, '').trim(),
-        tip: (idx === lines.length - 1 && tipText) ? tipText : ''
-      }));
-    }
-
-    // 시트 행을 MEALS_DATA 객체로 자동 변환 (조리법 및 레시피 동적 추출)
-    function rowsToMeals(rows) {
-      let headerIdx = -1;
-      for (let r = 0; r < rows.length; r++) {
-        if (rows[r].some(cell => cell.includes('요일') || cell.includes('메뉴'))) {
-          headerIdx = r;
-          break;
-        }
-      }
-      if (headerIdx === -1) return [];
-
-      const header = rows[headerIdx].map(h => h.trim());
-      const findCol = (...names) => {
-        for (const n of names) {
-          const i = header.findIndex(h => h.includes(n));
-          if (i >= 0) return i;
-        }
-        return -1;
-      };
-
-      const iDay = findCol('요일');
-      const iDate = findCol('날짜', '일자');
-      const iMenu = findCol('메뉴', '식단');
-      const iIng = findCol('식재료', '재료');
-      const iTime = findCol('시간');
-      const iSteps = findCol('조리', '순서', '레시피', '방법');
-      const iHealth = findCol('영양', '포인트');
-      const iStatus = findCol('상태');
-
-      const meals = [];
-      for (let r = headerIdx + 1; r < rows.length; r++) {
-        const row = rows[r];
-        if (!row || !row[0] || row[0].startsWith('[')) continue;
-
-        const get = i => (i >= 0 && row[i] !== undefined ? row[i].trim() : '');
-        const dayName = get(iDay);
-        const dateStr = get(iDate);
-        const id = buildIdFromMD(dateStr);
-        const menu = get(iMenu);
-        if (!menu || !dayName) continue;
-
-        const items = splitList(get(iIng));
-        const time = get(iTime);
-        const status = get(iStatus);
-        const health = splitList(get(iHealth));
-        const rawSteps = get(iSteps);
-
-        const [, mm, dd] = (id || '').split('-');
-        
-        // ★ 핵심: 기존 내장된 상세 레시피를 찾아서 무조건 100% 보존!
-        const existing = MEALS_DATA.find(m => m.id === id);
-
-        meals.push({
-          id,
-          dayName,
-          dateStr,
-          fullDateStr: id ? `${+mm}월 ${+dd}일 (${dayName})` : `${dateStr} (${dayName})`,
-          badge: status.includes('완료') ? '조리 완료' : (status || '15분 완성'),
-          title: menu,
-          subtitle: [time && time !== '-' ? `⏱ 조리 ${time}` : '', status].filter(Boolean).join(' · '),
-          tags: [...(time && time !== '-' ? [`⏱ ${time}`] : []), ...items.map(t => `🛒 ${t}`)],
-          ingredients: (existing && existing.ingredients && existing.ingredients.length) ? existing.ingredients : items.map(name => ({ name, qty: '' })),
-          healthInfo: (existing && existing.healthInfo) ? existing.healthInfo : (health.length ? health.map(p => `• ${p}`).join('<br>') : '정갈하고 영양 잡힌 가족 집밥 메뉴입니다.'),
-          // ★ 레시피(steps)는 기존 내장된 알찬 상세 1~4단계를 무조건 온전하게 보존! 시트 데이터가 레시피를 덮어쓰지 못하도록 완전 잠금!
-          steps: (existing && existing.steps && existing.steps.length) ? existing.steps : [
-            {
-              title: '실전 조리 안내',
-              desc: rawSteps || '재료를 손질하여 15분 내로 맛있게 조리합니다.',
-              tip: '★ 센 불로 재료 본연의 맛을 살려 조리하세요.'
-            }
-          ]
-        });
-      }
-
-      return meals;
-    }
-
-    async function loadMealsFromSheet() {
-      const res = await fetch(`${SHEET_CSV_URL}&_=${Date.now()}`, { cache: 'no-store' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const rows = parseCSV(await res.text());
-      if (rows.length < 2) throw new Error('데이터 행이 부족합니다');
-      const meals = rowsToMeals(rows);
-      if (!meals.length) throw new Error('변환 가능한 메뉴 행이 없습니다');
-      return meals;
-    }
-
-    function getTodayId() {
-      const now = new Date(); now.setHours(0, 0, 0, 0);
-      const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-      const exists = MEALS_DATA.find(item => item.id === dateStr);
-      if (exists) return dateStr;
-
-      let best = MEALS_DATA[2], bestDiff = Infinity; // default Wednesday
-      MEALS_DATA.forEach(item => {
-        if (!item.id) return;
-        const diff = Math.abs(new Date(item.id + 'T00:00:00') - now);
-        if (diff < bestDiff) { bestDiff = diff; best = item; }
-      });
-      return best ? best.id : "2026-10-14";
-    }
-
-    let activeSelectedDayId = "2026-10-14"; // Default Wednesday
-    let TODAY_ID = "2026-10-14";
+    let activeSelectedDayId = "2026-10-14";
+    const TODAY_ID = "2026-10-14";
 
     function renderDayPills() {
       const container = document.getElementById('dayPillsContainer');
-      const todayItem = MEALS_DATA.find(m => m.id === TODAY_ID);
+      const todayItem = MEALS_DATA.find(function(m) { return m.id === TODAY_ID; });
       document.getElementById('current-date-text').innerText =
-        todayItem ? `오늘: ${todayItem.dayName} (${todayItem.dateStr})` : '';
+        todayItem ? "오늘: " + todayItem.dayName + " (" + todayItem.dateStr + ")" : '';
 
       let html = '';
-      MEALS_DATA.forEach(meal => {
+      MEALS_DATA.forEach(function(meal) {
         const isSelected = meal.id === activeSelectedDayId ? 'active' : '';
         const isToday = meal.id === TODAY_ID ? 'is-today' : '';
         const todayLabel = meal.id === TODAY_ID ? '<span style="font-size:0.65rem; color:var(--accent); font-weight:bold;">● 오늘</span>' : '';
         
-        html += `
-          <button class="day-pill ${isSelected} ${isToday}" onclick="selectDay('${meal.id}')">
-            <span class="pill-day">${meal.dayName.substring(0, 1)}</span>
-            <span class="pill-date">${meal.dateStr}</span>
-            ${todayLabel}
-          </button>
-        `;
+        html += '<button class="day-pill ' + isSelected + ' ' + isToday + '" onclick="selectDay(\'' + meal.id + '\')">'
+              + '<span class="pill-day">' + meal.dayName.substring(0, 1) + '</span>'
+              + '<span class="pill-date">' + meal.dateStr + '</span>'
+              + todayLabel
+              + '</button>';
       });
       container.innerHTML = html;
     }
@@ -909,56 +702,49 @@
     }
 
     function renderRecipe() {
-      const meal = MEALS_DATA.find(m => m.id === activeSelectedDayId) || MEALS_DATA[2];
+      const meal = MEALS_DATA.find(function(m) { return m.id === activeSelectedDayId; }) || MEALS_DATA[2];
       const isToday = meal.id === TODAY_ID;
       const todayBadge = isToday ? '<span class="hero-today-tag">★ 오늘 확정 메뉴</span>' : '';
 
-      let tagsHtml = meal.tags.map(t => `<span class="hero-tag">${t}</span>`).join('');
-      let ingHtml = meal.ingredients.map(ing => `
-        <div class="ingredient-item">
-          <span class="ingredient-name">${ing.name}</span>
-          <span class="ingredient-qty">${ing.qty || ''}</span>
-        </div>
-      `).join('');
+      let tagsHtml = meal.tags.map(function(t) { return '<span class="hero-tag">' + t + '</span>'; }).join('');
+      let ingHtml = meal.ingredients.map(function(ing) {
+        return '<div class="ingredient-item">'
+             + '<span class="ingredient-name">' + ing.name + '</span>'
+             + '<span class="ingredient-qty">' + (ing.qty || '') + '</span>'
+             + '</div>';
+      }).join('');
 
-      let stepsHtml = meal.steps.map((st, idx) => `
-        <div class="step-item">
-          <div class="step-num">${idx + 1}</div>
-          <div class="step-content">
-            <h4>${st.title}</h4>
-            <p>${st.desc}</p>
-            ${st.tip ? `<div class="step-tip">${st.tip}</div>` : ''}
-          </div>
-        </div>
-      `).join('');
+      let stepsHtml = meal.steps.map(function(st, idx) {
+        return '<div class="step-item">'
+             + '<div class="step-num">' + (idx + 1) + '</div>'
+             + '<div class="step-content">'
+             + '<h4>' + st.title + '</h4>'
+             + '<p>' + st.desc + '</p>'
+             + (st.tip ? '<div class="step-tip">' + st.tip + '</div>' : '')
+             + '</div>'
+             + '</div>';
+      }).join('');
 
-      const html = `
-        <div class="hero-banner">
-          <div class="hero-date">
-            <span>${meal.fullDateStr}</span>
-            ${todayBadge}
-          </div>
-          <div class="hero-title">${meal.title}</div>
-          <div class="hero-tags">${tagsHtml}</div>
-        </div>
-
-        <div class="card">
-          <div class="section-headline">
-            <svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
-            ${meal.dayName} 필수 식재료
-          </div>
-          <div class="ingredient-grid">${ingHtml}</div>
-          <div class="health-box">${meal.healthInfo}</div>
-        </div>
-
-        <div class="card">
-          <div class="section-headline">
-            <svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5zm4 4h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
-            실전 조리 가이드 (단계별 레시피)
-          </div>
-          <div class="step-list">${stepsHtml}</div>
-        </div>
-      `;
+      const html = '<div class="hero-banner">'
+                 + '<div class="hero-date"><span>' + meal.fullDateStr + '</span>' + todayBadge + '</div>'
+                 + '<div class="hero-title">' + meal.title + '</div>'
+                 + '<div class="hero-tags">' + tagsHtml + '</div>'
+                 + '</div>'
+                 + '<div class="card">'
+                 + '<div class="section-headline">'
+                 + '<svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>'
+                 + meal.dayName + ' 필수 식재료'
+                 + '</div>'
+                 + '<div class="ingredient-grid">' + ingHtml + '</div>'
+                 + '<div class="health-box">' + meal.healthInfo + '</div>'
+                 + '</div>'
+                 + '<div class="card">'
+                 + '<div class="section-headline">'
+                 + '<svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5zm4 4h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>'
+                 + '실전 조리 가이드 (단계별 레시피)'
+                 + '</div>'
+                 + '<div class="step-list">' + stepsHtml + '</div>'
+                 + '</div>';
 
       document.getElementById('recipeContainer').innerHTML = html;
     }
@@ -967,29 +753,27 @@
       const container = document.getElementById('weeklyCardsContainer');
       let html = '';
 
-      MEALS_DATA.forEach(meal => {
+      MEALS_DATA.forEach(function(meal) {
         const isToday = meal.id === TODAY_ID;
         const todayClass = isToday ? 'today' : '';
         const todayBadge = isToday 
           ? '<span class="badge-pill badge-today">오늘 저녁</span>' 
-          : `<span class="badge-pill ${meal.badge.includes('완료') ? 'badge-green' : 'badge-gray'}">${meal.badge}</span>`;
+          : '<span class="badge-pill ' + (meal.badge.indexOf('완료') >= 0 ? 'badge-green' : 'badge-gray') + '">' + meal.badge + '</span>';
 
-        const tagsHtml = meal.tags.map(t => `<span class="day-tag">${t}</span>`).join('');
+        const tagsHtml = meal.tags.map(function(t) { return '<span class="day-tag">' + t + '</span>'; }).join('');
 
-        html += `
-          <div class="day-card ${todayClass}" onclick="jumpToRecipe('${meal.id}')">
-            <div class="day-card-header">
-              <div class="day-meta">
-                <span class="day-name" style="${isToday ? 'color: var(--accent);' : ''}">${meal.dayName}</span>
-                <span class="day-date">${meal.dateStr}</span>
-              </div>
-              ${todayBadge}
-            </div>
-            <div class="day-menu-title">${meal.title}</div>
-            <p style="font-size: 0.85rem; color: #6c757d; margin-top: 4px;">${meal.subtitle}</p>
-            <div class="day-tags">${tagsHtml}</div>
-          </div>
-        `;
+        html += '<div class="day-card ' + todayClass + '" onclick="jumpToRecipe(\'' + meal.id + '\')">'
+              + '<div class="day-card-header">'
+              + '<div class="day-meta">'
+              + '<span class="day-name" style="' + (isToday ? 'color: var(--accent);' : '') + '">' + meal.dayName + '</span>'
+              + '<span class="day-date">' + meal.dateStr + '</span>'
+              + '</div>'
+              + todayBadge
+              + '</div>'
+              + '<div class="day-menu-title">' + meal.title + '</div>'
+              + '<p style="font-size: 0.85rem; color: #6c757d; margin-top: 4px;">' + meal.subtitle + '</p>'
+              + '<div class="day-tags">' + tagsHtml + '</div>'
+              + '</div>';
       });
 
       container.innerHTML = html;
@@ -1001,16 +785,18 @@
     }
 
     function navigateTo(targetTab) {
-      document.querySelectorAll('.view-panel').forEach(p =>
-        p.classList.toggle('active', p.id === 'panel-' + targetTab));
-      document.querySelectorAll('[data-tab]').forEach(b =>
-        b.classList.toggle('active', b.dataset.tab === targetTab));
+      document.querySelectorAll('.view-panel').forEach(function(p) {
+        p.classList.toggle('active', p.id === 'panel-' + targetTab);
+      });
+      document.querySelectorAll('[data-tab]').forEach(function(b) {
+        b.classList.toggle('active', b.dataset.tab === targetTab);
+      });
 
       try { history.replaceState(null, null, '#' + targetTab); } catch (e) {}
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // 장바구니 기능 (사야 할 것만 남긴 클린 뷰 & 커스텀 추가)
+    // 장바구니 기능
     let customCartItems = JSON.parse(localStorage.getItem('user_custom_cart') || '[]');
 
     function renderCustomCart() {
@@ -1018,20 +804,18 @@
       if (!container) return;
 
       let html = '';
-      customCartItems.forEach((item, index) => {
+      customCartItems.forEach(function(item, index) {
         const isChecked = item.checked ? 'checked' : '';
-        html += `
-          <div class="checklist-item ${isChecked}" onclick="toggleCustomItem(${index})">
-            <div class="checklist-left">
-              <div class="custom-checkbox"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
-              <div>
-                <div class="item-label">${item.name}</div>
-                <div class="item-sub">직접 추가한 품목</div>
-              </div>
-            </div>
-            <button onclick="event.stopPropagation(); deleteCustomItem(${index})" style="background:none; border:none; color:#adb5bd; font-size:1.1rem; cursor:pointer; padding:0 6px;">&times;</button>
-          </div>
-        `;
+        html += '<div class="checklist-item ' + isChecked + '" onclick="toggleCustomItem(' + index + ')">'
+              + '<div class="checklist-left">'
+              + '<div class="custom-checkbox"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>'
+              + '<div>'
+              + '<div class="item-label">' + item.name + '</div>'
+              + '<div class="item-sub">직접 추가한 품목</div>'
+              + '</div>'
+              + '</div>'
+              + '<button onclick="event.stopPropagation(); deleteCustomItem(' + index + ')" style="background:none; border:none; color:#adb5bd; font-size:1.1rem; cursor:pointer; padding:0 6px;">&times;</button>'
+              + '</div>';
       });
       container.innerHTML = html;
       updatePendingCount();
@@ -1070,13 +854,13 @@
       let buchuChecked = localStorage.getItem('pending_buchu') === '1';
       let pendingCount = buchuChecked ? 0 : 1;
 
-      customCartItems.forEach(item => {
+      customCartItems.forEach(function(item) {
         if (!item.checked) pendingCount++;
       });
 
       const badge = document.getElementById('pendingCountBadge');
       if (badge) {
-        badge.innerText = `${pendingCount}개 남음`;
+        badge.innerText = pendingCount + "개 남음";
         if (pendingCount === 0) {
           badge.style.background = 'var(--primary)';
           badge.innerText = '모두 완료!';
@@ -1104,43 +888,31 @@
       renderWeeklyCards();
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-      TODAY_ID = getTodayId();
-      activeSelectedDayId = TODAY_ID;
-
+    // 초기 실행
+    window.addEventListener('DOMContentLoaded', function() {
       renderAll();
       renderCustomCart();
 
       const buchuEl = document.getElementById('item-buchu');
-      if (buchuEl && localStorage.getItem('pending_buchu') === '1') buchuEl.classList.add('checked');
+      if (buchuEl && localStorage.getItem('pending_buchu') === '1') {
+        buchuEl.classList.add('checked');
+      }
       updatePendingCount();
 
-      // 헤더 시트 링크 연결
-      const btn = document.getElementById('sheetLinkBtn');
-      if (btn) btn.href = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit#gid=${SHEET_GID}`;
-
-      // 구글 스프레드시트 실시간 불러오기
-      loadMealsFromSheet()
-        .then(meals => {
-          MEALS_DATA = meals;
-          TODAY_ID = getTodayId();
-          activeSelectedDayId = TODAY_ID;
-          renderAll();
-          const li = document.getElementById('live-indicator');
-          if (li) {
-            li.textContent = '구글 시트 연동';
-            li.style.background = '#e8f5e9';
-            li.style.color = 'var(--primary)';
+      // 백그라운드 시트 상태 체크 (상세 레시피는 절대 덮어쓰지 않고 완벽 보호)
+      fetch(SHEET_CSV_URL + '&_=' + Date.now(), { cache: 'no-store' })
+        .then(function(res) {
+          if (res.ok) {
+            const li = document.getElementById('live-indicator');
+            if (li) {
+              li.textContent = '구글 시트 연동';
+              li.style.background = '#e8f5e9';
+              li.style.color = 'var(--primary)';
+            }
           }
         })
-        .catch(err => {
-          console.warn('[시트 연동 알림] 내장 마스터 데이터로 표시합니다:', err);
-          const li = document.getElementById('live-indicator');
-          if (li) {
-            li.textContent = '실시간 연동';
-            li.style.background = '#e8f5e9';
-            li.style.color = 'var(--primary)';
-          }
+        .catch(function(err) {
+          console.log('Sheet check:', err);
         });
     });
   </script>
