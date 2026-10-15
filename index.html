@@ -769,28 +769,38 @@
       return false;
     }
 
-    // 구글 문서 텍스트 비동기 가져오기
+    // 구글 문서 텍스트 비동기 가져오기 (2.5초 타임아웃 & 비공개 감지)
     async function syncWithGoogleDoc() {
       const indicator = document.getElementById('live-indicator');
       if (indicator) {
-        indicator.textContent = '문서 동기화 시도 중...';
+        indicator.textContent = '문서 동기화 확인 중...';
         indicator.className = 'header-badge loading';
       }
 
       let fetchedText = null;
+      let isPrivateDoc = false;
+
       for (let i = 0; i < CORS_PROXIES.length; i++) {
         try {
-          const res = await fetch(CORS_PROXIES[i], { cache: 'no-store' });
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 2500); // 2.5초 타임아웃으로 지연 차단
+          const res = await fetch(CORS_PROXIES[i], { signal: controller.signal, cache: 'no-store' });
+          clearTimeout(timer);
+
           if (res.ok) {
             const txt = await res.text();
-            // Google Login 페이지가 아닌 정상 텍스트인지 검증
-            if (txt && !txt.includes('<!DOCTYPE html>') && (txt.includes('식단표') || txt.includes('레시피'))) {
+            // 구글 로그인 리다이렉트 감지 (비공개 문서)
+            if (txt && (txt.includes('accounts.google.com') || txt.includes('ServiceLogin') || txt.includes('<!DOCTYPE html>'))) {
+              isPrivateDoc = true;
+              break; // 비공개 문서임이 확인되면 불필요한 재시도 중단
+            }
+            if (txt && (txt.includes('식단표') || txt.includes('레시피'))) {
               fetchedText = txt;
               break;
             }
           }
         } catch(e) {
-          console.warn("Proxy attempt failed:", e);
+          console.warn("Proxy attempt failed or timed out:", e);
         }
       }
 
@@ -798,21 +808,31 @@
         const success = parseHumanGoogleDoc(fetchedText);
         if (success) {
           if (indicator) {
-            indicator.textContent = '🟢 구글 문서 실시간 연동됨';
+            indicator.textContent = '🟢 실시간 연동 완료';
             indicator.className = 'header-badge connected';
           }
+          const banner = document.getElementById('syncNoticeBanner');
+          if (banner) banner.style.display = 'none';
           renderAll();
           return;
         }
       }
 
-      // 비공개 상태거나 프록시 연결 불가 시 안내 상태
+      // 비공개 상태 또는 미연동 시 즉시 명확하게 안내
       if (indicator) {
-        indicator.textContent = '구글 문서 (클릭하여 연동 안내)';
+        indicator.textContent = isPrivateDoc ? '🔒 문서 비공개 상태 (클릭)' : '구글 문서 연결 안내 (클릭)';
         indicator.className = 'header-badge notice';
       }
       const banner = document.getElementById('syncNoticeBanner');
-      if (banner) banner.style.display = 'flex';
+      if (banner) {
+        banner.style.display = 'flex';
+        banner.innerHTML = `
+          <div>
+            <strong>🔒 구글 문서가 비공개 상태입니다</strong>: 현재 소유자만 볼 수 있어 웹앱이 내용을 읽지 못하고 있습니다. 구글 문서 우측 상단 <strong>[공유] ➡ [일반 액세스: 링크가 있는 모든 사용자(뷰어)]</strong>로 변경하시면 실시간 수정 내용이 즉시 반영됩니다! (현재는 최신 저장 식단으로 정상 표시 중)
+          </div>
+          <button onclick="this.parentElement.style.display='none'" style="background:none; border:none; color:#004a77; font-weight:bold; cursor:pointer; padding:0 6px; font-size:1.1rem;">&times;</button>
+        `;
+      }
       renderAll();
     }
 
