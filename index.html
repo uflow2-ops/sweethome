@@ -687,22 +687,29 @@
     let TODAY_ID = "2026-10-15";
     let activeSelectedDayId = "2026-10-15";
 
-    // ── 실시간 구글 문서 텍스트 파싱 엔진 (사람용 일반 텍스트 읽기) ──
+    // ── 실시간 구글 문서 텍스트 파싱 엔진 (기존 상세 재료 박스 100% 보존 & 스마트 병합) ──
     function parseHumanGoogleDoc(text) {
       if (!text || text.length < 50) return false;
+
+      // 기존 MEALS_DATA의 상세 정보(재료별 개별 박스, 레시피 스텝 등)를 맵에 보관
+      const mealMap = {};
+      MEALS_DATA.forEach(m => {
+        mealMap[m.id] = JSON.parse(JSON.stringify(m));
+      });
 
       // 1. 요일별 식단 라인 파싱: 예) * 월 (10/12): 순살 고등어...
       const dayLineRegex = /[\*\-]\s*\*?\*?(월|화|수|목|금|토|일)\s*\(([0-9]{1,2}\/[0-9]{1,2})([^)]*)\)\*?\*?\s*:\s*([^\n\r]+)/g;
       let match;
-      let parsedMeals = [];
+      let matchedCount = 0;
 
       while ((match = dayLineRegex.exec(text)) !== null) {
+        matchedCount++;
         const dayKorean = match[1];
         const dateStr = match[2];
         const note = (match[3] || '').trim();
         const fullTitle = match[4].trim();
 
-        // 뱃지 추출: 괄호 안의 상태(조리 완료, 오늘 저녁 등) 분리
+        // 뱃지 추출
         let badge = "식단 예정";
         let cleanTitle = fullTitle;
         const badgeMatch = fullTitle.match(/\((조리 완료|오늘 저녁[^)]*|외식|주방 휴업|확정[^)]*)\)/);
@@ -712,57 +719,85 @@
         }
 
         const id = `2026-${dateStr.replace('/', '-')}`;
-        parsedMeals.push({
-          id: id,
-          dayName: `${dayKorean}요일`,
-          dateStr: dateStr,
-          fullDateStr: `2026. ${dateStr.replace('/', '. ')} (${dayKorean}요일)`,
-          badge: badge,
-          title: cleanTitle,
-          subtitle: `구글 문서에서 실시간 연동된 ${dayKorean}요일 식단입니다.`,
-          tags: [cleanTitle.includes("외식") ? "👵 가족 외식" : "🥗 집밥", badge],
-          ingredients: [{ name: cleanTitle, qty: "적당량" }],
-          healthInfo: "구글 문서에 기록된 식단 정보입니다.",
-          steps: [{ title: cleanTitle, desc: "구글 문서에 상세 레시피를 적으시면 여기에 자동으로 표시됩니다.", tip: "★ 맛있는 식사 시간 되세요!" }]
-        });
+        if (!mealMap[id]) {
+          mealMap[id] = {
+            id: id,
+            dayName: `${dayKorean}요일`,
+            dateStr: dateStr,
+            fullDateStr: `2026. ${dateStr.replace('/', '. ')} (${dayKorean}요일)`,
+            badge: badge,
+            title: cleanTitle,
+            subtitle: `${dayKorean}요일 식단`,
+            tags: [cleanTitle.includes("외식") ? "👵 가족 외식" : "🥗 집밥", badge],
+            ingredients: [{ name: cleanTitle, qty: "적당량" }],
+            healthInfo: "영양 가득 건강 식단입니다.",
+            steps: [{ title: cleanTitle, desc: "정성껏 준비하는 따뜻한 가족 식사 시간.", tip: "★ 맛있게 드세요!" }]
+          };
+        } else {
+          // 기존 상세 재료(ingredients)와 스텝(steps)은 그대로 유지하고, 변경된 제목과 뱃지만 업데이트!
+          mealMap[id].title = cleanTitle;
+          mealMap[id].badge = badge;
+          if (cleanTitle.includes("외식")) {
+            mealMap[id].tags = ["👵 외할머니와 함께", "주방 완전 오프", "가족 힐링 외식"];
+            mealMap[id].ingredients = [{ name: "외식 메뉴", qty: "한식 정식 / 구이류 권장" }];
+          }
+        }
 
         if (note.includes('오늘') || fullTitle.includes('오늘')) {
           TODAY_ID = id;
         }
       }
 
-      // 2. 오늘의 레시피 상세 파싱
-      const todayRecipeSection = text.match(/오늘의 저녁 레시피([\s\S]*?)(?:---|\Z)/);
-      if (todayRecipeSection && todayRecipeSection[1]) {
-        const secText = todayRecipeSection[1];
-        const menuMatch = secText.match(/메뉴\s*:\s*([^\n\r]+)/);
-        const todayMeal = parsedMeals.find(m => m.id === TODAY_ID);
-        if (todayMeal && menuMatch) {
-          todayMeal.title = menuMatch[1].replace(/\*\*/g, '').trim();
+      // 2. 오늘의 레시피 상세 파싱 (재료별 개별 박스 분리 추출)
+      const ingSection = text.match(/\[필수\s*재료\]([\s\S]*?)(?:###|\[|\n\n#|---|\Z)/);
+      if (ingSection && ingSection[1]) {
+        const lines = ingSection[1].split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        const parsedIngs = [];
 
-          // 필수 재료 파싱
-          const ingMatches = [...secText.matchAll(/[\*\-]\s*([^:\n]+):\s*([^\n\r]+)/g)];
-          if (ingMatches.length > 0) {
-            todayMeal.ingredients = ingMatches.map(m => ({
-              name: m[1].replace(/\*\*/g, '').trim(),
-              qty: m[2].replace(/\*\*/g, '').trim()
-            }));
+        lines.forEach(line => {
+          // 글머리 기호(-, *, • 등)와 콜론(:) 매칭
+          const m = line.match(/^[\s\t]*[\*\-•·]?\s*([^:\n\r]+?)\s*[:：]\s*([^\n\r]+)/);
+          if (m) {
+            const ingName = m[1].replace(/\*\*/g, '').trim();
+            const ingQty = m[2].replace(/\*\*/g, '').trim();
+            if (ingName && !ingName.includes('[')) {
+              parsedIngs.push({ name: ingName, qty: ingQty });
+            }
           }
+        });
 
-          // 조리법 단계 파싱
-          const stepMatches = [...secText.matchAll(/\d+\.\s*\*?\*?([^:\n]+)\*?\*?:\s*([^\n\r]+)/g)];
-          if (stepMatches.length > 0) {
-            todayMeal.steps = stepMatches.map(m => ({
-              title: m[1].replace(/\*\*/g, '').trim(),
-              desc: m[2].replace(/\*\*/g, '').trim(),
-              tip: "★ 15분 완성 원팬 조리"
-            }));
+        // 분리된 재료가 2개 이상 정확히 파싱되었을 때만 교체 (절대 1개 박스로 뭉개지지 않음!)
+        if (parsedIngs.length >= 2) {
+          const todayMeal = mealMap[TODAY_ID];
+          if (todayMeal) {
+            todayMeal.ingredients = parsedIngs;
           }
         }
       }
 
-      if (parsedMeals.length >= 5) {
-        MEALS_DATA = parsedMeals;
+      // 3. 조리법 단계 상세 파싱
+      const stepSection = text.match(/\[(?:3단계|\d+단계)?\s*실전\s*조리법\]([\s\S]*?)(?:---|###|\n\n#|\Z)/);
+      if (stepSection && stepSection[1]) {
+        const stepLines = stepSection[1].split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        const parsedSteps = [];
+        stepLines.forEach(line => {
+          const sm = line.match(/^\d+\.\s*\*?\*?([^:\n]+)\*?\*?:\s*([^\n\r]+)/);
+          if (sm) {
+            parsedSteps.push({
+              title: sm[1].replace(/\*\*/g, '').trim(),
+              desc: sm[2].replace(/\*\*/g, '').trim(),
+              tip: "★ 15분 완성 원팬 조리"
+            });
+          }
+        });
+        if (parsedSteps.length >= 2) {
+          const todayMeal = mealMap[TODAY_ID];
+          if (todayMeal) todayMeal.steps = parsedSteps;
+        }
+      }
+
+      if (matchedCount >= 3) {
+        MEALS_DATA = Object.values(mealMap);
         activeSelectedDayId = TODAY_ID;
         return true;
       }
