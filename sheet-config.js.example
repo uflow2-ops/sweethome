@@ -1,9 +1,0 @@
-// 사용법:
-// 1) 이 파일을 sheet-config.js 로 복사
-// 2) sheetId 에 구글 스프레드시트 주소의 /d/ 와 /edit 사이 값 입력
-// 3) sheet-config.js 는 .gitignore 에 등록되어 깃허브에 올라가지 않습니다.
-//    (이 템플릿 파일은 공개되어도 시트 ID가 없으므로 안전합니다)
-window.SHEET_CONFIG = {
-  sheetId: '여기에_시트_ID_입력',
-  gid: '0'
-};
