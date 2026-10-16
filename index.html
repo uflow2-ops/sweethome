@@ -378,7 +378,14 @@
     .status-bought { background: #e2f0d9; color: #385723; }
     .status-shipping { background: #fff2cc; color: #b25900; }
 
-    /* 알림 바 */
+    /* 네이티브 details 아코디언 */
+    details.accordion { background: #fafafa; border: 1px dashed #ced4da; border-radius: var(--radius); padding: 14px; }
+    details.accordion summary { font-size: 0.88rem; font-weight: 700; color: #495057; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; user-select: none; }
+    details.accordion summary::-webkit-details-marker { display: none; }
+    details.accordion summary::after { content: '▼ 열기'; font-size: 0.8rem; color: #6c757d; font-weight: bold; }
+    details.accordion[open] summary::after { content: '▲ 접기'; }
+    details.accordion .accordion-body { margin-top: 12px; border-top: 1px solid #e9ecef; padding-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+
     .sync-banner {
       background: #e8f0fe;
       border: 1px solid #c2e7ff;
@@ -476,35 +483,27 @@
         </div>
       </div>
 
-      <div class="card" style="padding: 14px; background: #fafafa; border: 1px dashed #ced4da;">
-        <div onclick="toggleCompletedSection()" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none;">
-          <div style="font-size: 0.88rem; font-weight: 700; color: #495057; display: flex; align-items: center; gap: 6px;">
-            <span>📦 냉장고/팬트리 보유 품목 (추가 지출 0원)</span>
+      <details class="accordion">
+        <summary>📦 냉장고/팬트리 보유 품목 (추가 지출 0원)</summary>
+        <div class="accordion-body">
+          <div class="checklist-item checked" style="cursor: default; padding: 8px 10px;">
+            <span style="font-size: 0.85rem;">돼지고기 목살 400g (10/15 목 단짠 볶음 완판)</span>
+            <span class="status-badge status-bought">보관 중</span>
           </div>
-          <span id="accordionArrow" style="font-size: 0.8rem; color: #6c757d; font-weight: bold;">▼ 열기</span>
-        </div>
-
-        <div id="completedSection" style="display: none; margin-top: 12px; border-top: 1px solid #e9ecef; padding-top: 10px;">
-          <div style="display: flex; flex-direction: column; gap: 6px;">
-            <div class="checklist-item checked" style="cursor: default; padding: 8px 10px;">
-              <span style="font-size: 0.85rem;">돼지고기 목살 400g (오늘 10/15 목 단짠 볶음 완판)</span>
-              <span class="status-badge status-bought">보관 중</span>
-            </div>
-            <div class="checklist-item checked" style="cursor: default; padding: 8px 10px;">
-              <span style="font-size: 0.85rem;">냉동 손질 오징어 1~2마리 (내일 10/16 금 매콤 볶음 완판)</span>
-              <span class="status-badge status-bought">보관 중</span>
-            </div>
-            <div class="checklist-item checked" style="cursor: default; padding: 8px 10px;">
-              <span style="font-size: 0.85rem;">양파 1망 & 대파 (목·금 볶음 요리 투하 중)</span>
-              <span class="status-badge status-bought">보관 중</span>
-            </div>
-            <div class="checklist-item checked" style="cursor: default; padding: 8px 10px;">
-              <span style="font-size: 0.85rem;">가을 햇사과 & 제주 감귤 (초3 아침 과일)</span>
-              <span class="status-badge status-shipping">보관 중</span>
-            </div>
+          <div class="checklist-item checked" style="cursor: default; padding: 8px 10px;">
+            <span style="font-size: 0.85rem;">냉동 손질 오징어 1~2마리 (10/16 금 매콤 볶음 완판)</span>
+            <span class="status-badge status-bought">보관 중</span>
+          </div>
+          <div class="checklist-item checked" style="cursor: default; padding: 8px 10px;">
+            <span style="font-size: 0.85rem;">양파 1망 & 대파 (목·금 볶음 요리 투하 중)</span>
+            <span class="status-badge status-bought">보관 중</span>
+          </div>
+          <div class="checklist-item checked" style="cursor: default; padding: 8px 10px;">
+            <span style="font-size: 0.85rem;">가을 햇사과 & 제주 감귤 (초3 아침 과일)</span>
+            <span class="status-badge status-shipping">보관 중</span>
           </div>
         </div>
-      </div>
+      </details>
     </main>
   </div>
 
@@ -524,17 +523,9 @@
   </nav>
 
   <script>
-    // ── 구글 문서 (Google Docs) 실시간 연동 설정 (일반 텍스트 파싱) ──
     const GOOGLE_DOC_ID = '1XabcGW7Ru_I83QuN_L1UzDFuZ-G-h3xTNVjmJW9_wfg';
-    const GOOGLE_DOC_URL = 'https://docs.google.com/document/d/' + GOOGLE_DOC_ID + '/edit';
-    const GOOGLE_DOC_EXPORT_TXT = 'https://docs.google.com/document/d/' + GOOGLE_DOC_ID + '/export?format=txt';
-    const CORS_PROXIES = [
-      'https://api.allorigins.win/raw?url=' + encodeURIComponent(GOOGLE_DOC_EXPORT_TXT),
-      'https://corsproxy.io/?' + encodeURIComponent(GOOGLE_DOC_EXPORT_TXT),
-      GOOGLE_DOC_EXPORT_TXT
-    ];
 
-    // 기본 식단 데이터 (100% 한글, 토요일 외할머니 외식 포함)
+    // 기본 식단 데이터
     let MEALS_DATA = [
       {
         id: "2026-10-12",
@@ -611,8 +602,8 @@
         id: "2026-10-15",
         dayName: "목요일",
         dateStr: "10/15",
-        fullDateStr: "2026. 10. 15 (목요일) 오늘 저녁",
-        badge: "오늘 저녁 확정",
+        fullDateStr: "2026. 10. 15 (목요일)",
+        badge: "조리 완료",
         title: "단짠 양념 목살 볶음 (돼지갈비맛, 양파 듬뿍)",
         subtitle: "소고기 제외! 화요일에 남겨둔 목살 400g과 양파 1~2개를 간장·올리고당에 달달 볶아 불금 전야 고기 파티.",
         tags: ["⏱ 15분 완성", "🥩 남은 목살 400g 완판", "🧅 양파 듬뿍 퀘르세틴", "100% 뼈 없음", "아이 밥도둑"],
@@ -633,8 +624,8 @@
         id: "2026-10-16",
         dayName: "금요일",
         dateStr: "10/16",
-        fullDateStr: "2026. 10. 16 (금요일) 저녁",
-        badge: "냉동 오징어 완판",
+        fullDateStr: "2026. 10. 16 (금요일)",
+        badge: "오늘 저녁 확정",
         title: "[냉파 Day] 매콤달콤 오징어 볶음 (물 안 생기는 비법)",
         subtitle: "오징어부추전 제외! 냉동실 손질 오징어를 15초 데쳐 볶아 물 1방울 없이 불맛 코팅.",
         tags: ["⏱ 15분 완성", "🦑 냉동 손질 오징어", "🧅 양파 듬뿍", "물 안 생기는 15초 데치기", "지출 0원 냉파"],
@@ -656,7 +647,7 @@
         id: "2026-10-17",
         dayName: "토요일",
         dateStr: "10/17",
-        fullDateStr: "2026. 10. 17 (토요일) 저녁",
+        fullDateStr: "2026. 10. 17 (토요일)",
         badge: "외할머니 외식",
         title: "외할머니와 가족 외식 (주말 가족 특식 / 주방 휴업)",
         subtitle: "외할머니를 모시고 온 가족이 함께하는 따뜻하고 편안한 주말 외식.",
@@ -671,7 +662,7 @@
         id: "2026-10-18",
         dayName: "일요일",
         dateStr: "10/18",
-        fullDateStr: "2026. 10. 18 (일요일) 저녁",
+        fullDateStr: "2026. 10. 18 (일요일)",
         badge: "냉파 & 마무리",
         title: "주말 냉파 & 편안한 집밥",
         subtitle: "냉장고 속 남은 자투리 재료를 깔끔하게 소진하는 일요일 마무리 집밥.",
@@ -684,20 +675,28 @@
       }
     ];
 
-    let TODAY_ID = "2026-10-15";
-    let activeSelectedDayId = "2026-10-15";
+    // 기기의 실제 오늘 날짜(YYYY-MM-DD)를 자동 계산
+    function getSystemTodayId() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
 
-    // ── 실시간 구글 문서 텍스트 파싱 엔진 (기존 상세 재료 박스 100% 보존 & 스마트 병합) ──
+    let TODAY_ID = getSystemTodayId();
+    let activeSelectedDayId = MEALS_DATA.some(m => m.id === TODAY_ID) ? TODAY_ID : MEALS_DATA[0].id;
+    let lastFetchedText = "";
+
+    // 실시간 구글 문서 텍스트 파싱 엔진
     function parseHumanGoogleDoc(text) {
       if (!text || text.length < 50) return false;
 
-      // 기존 MEALS_DATA의 상세 정보(재료별 개별 박스, 레시피 스텝 등)를 맵에 보관
       const mealMap = {};
       MEALS_DATA.forEach(m => {
         mealMap[m.id] = JSON.parse(JSON.stringify(m));
       });
 
-      // 1. 요일별 식단 라인 파싱: 예) * 월 (10/12): 순살 고등어...
       const dayLineRegex = /[\*\-]\s*\*?\*?(월|화|수|목|금|토|일)\s*\(([0-9]{1,2}\/[0-9]{1,2})([^)]*)\)\*?\*?\s*:\s*([^\n\r]+)/g;
       let match;
       let matchedCount = 0;
@@ -706,19 +705,19 @@
         matchedCount++;
         const dayKorean = match[1];
         const dateStr = match[2];
-        const note = (match[3] || '').trim();
         const fullTitle = match[4].trim();
 
-        // 뱃지 추출
         let badge = "식단 예정";
         let cleanTitle = fullTitle;
-        const badgeMatch = fullTitle.match(/\((조리 완료|오늘 저녁[^)]*|외식|주방 휴업|확정[^)]*)\)/);
+        const badgeMatch = fullTitle.match(/\((조리 완료\vert{}오늘 저녁[^)]*\vert{}외식\vert{}주방 휴업\vert{}확정[^)]*)\)/);
         if (badgeMatch) {
           badge = badgeMatch[1];
           cleanTitle = fullTitle.replace(badgeMatch[0], '').trim();
         }
 
-        const id = `2026-${dateStr.replace('/', '-')}`;
+        const [mStr, dStr] = dateStr.split('/');
+        const id = `2026-${mStr.padStart(2, '0')}-${dStr.padStart(2, '0')}`;
+
         if (!mealMap[id]) {
           mealMap[id] = {
             id: id,
@@ -734,7 +733,6 @@
             steps: [{ title: cleanTitle, desc: "정성껏 준비하는 따뜻한 가족 식사 시간.", tip: "★ 맛있게 드세요!" }]
           };
         } else {
-          // 기존 상세 재료(ingredients)와 스텝(steps)은 그대로 유지하고, 변경된 제목과 뱃지만 업데이트!
           mealMap[id].title = cleanTitle;
           mealMap[id].badge = badge;
           if (cleanTitle.includes("외식")) {
@@ -742,20 +740,18 @@
             mealMap[id].ingredients = [{ name: "외식 메뉴", qty: "한식 정식 / 구이류 권장" }];
           }
         }
-
-        if (note.includes('오늘') || fullTitle.includes('오늘')) {
-          TODAY_ID = id;
-        }
       }
 
-      // 2. 오늘의 레시피 상세 파싱 (재료별 개별 박스 분리 추출)
+      // 문서 텍스트와 무관하게 시스템 실제 오늘 날짜를 우선 적용
+      TODAY_ID = getSystemTodayId();
+
+      // 오늘의 레시피 재료 파싱
       const ingSection = text.match(/\[필수\s*재료\]([\s\S]*?)(?:###|\[|\n\n#|---|\Z)/);
       if (ingSection && ingSection[1]) {
         const lines = ingSection[1].split('\n').map(l => l.trim()).filter(l => l.length > 0);
         const parsedIngs = [];
 
         lines.forEach(line => {
-          // 글머리 기호(-, *, • 등)와 콜론(:) 매칭
           const m = line.match(/^[\s\t]*[\*\-•·]?\s*([^:\n\r]+?)\s*[:：]\s*([^\n\r]+)/);
           if (m) {
             const ingName = m[1].replace(/\*\*/g, '').trim();
@@ -766,17 +762,13 @@
           }
         });
 
-        // 분리된 재료가 2개 이상 정확히 파싱되었을 때만 교체 (절대 1개 박스로 뭉개지지 않음!)
-        if (parsedIngs.length >= 2) {
-          const todayMeal = mealMap[TODAY_ID];
-          if (todayMeal) {
-            todayMeal.ingredients = parsedIngs;
-          }
+        if (parsedIngs.length >= 2 && mealMap[TODAY_ID]) {
+          mealMap[TODAY_ID].ingredients = parsedIngs;
         }
       }
 
-      // 3. 조리법 단계 상세 파싱
-      const stepSection = text.match(/\[(?:3단계|\d+단계)?\s*실전\s*조리법\]([\s\S]*?)(?:---|###|\n\n#|\Z)/);
+      // 조리법 단계 상세 파싱
+      const stepSection = text.match(/\[(?:3단계\vert{}\d+단계)?\s*실전\s*조리법\]([\s\S]*?)(?:---|###|\n\n#|\Z)/);
       if (stepSection && stepSection[1]) {
         const stepLines = stepSection[1].split('\n').map(l => l.trim()).filter(l => l.length > 0);
         const parsedSteps = [];
@@ -790,46 +782,45 @@
             });
           }
         });
-        if (parsedSteps.length >= 2) {
-          const todayMeal = mealMap[TODAY_ID];
-          if (todayMeal) todayMeal.steps = parsedSteps;
+        if (parsedSteps.length >= 2 && mealMap[TODAY_ID]) {
+          mealMap[TODAY_ID].steps = parsedSteps;
         }
       }
 
       if (matchedCount >= 3) {
         MEALS_DATA = Object.values(mealMap);
-        activeSelectedDayId = TODAY_ID;
         return true;
       }
       return false;
     }
 
-    // 구글 문서 텍스트 비동기 가져오기 (2.5초 타임아웃 & 비공개 감지)
+    // 캐시 방지 파라미터가 포함된 구글 문서 동기화
     async function syncWithGoogleDoc() {
       const indicator = document.getElementById('live-indicator');
-      if (indicator) {
-        indicator.textContent = '문서 동기화 확인 중...';
-        indicator.className = 'header-badge loading';
-      }
+      const rawUrl = `https://docs.google.com/document/d/${GOOGLE_DOC_ID}/export?format=txt&_t=${Date.now()}`;
+      const targetUrls = [
+        'https://api.allorigins.win/raw?url=' + encodeURIComponent(rawUrl),
+        'https://corsproxy.io/?' + encodeURIComponent(rawUrl),
+        rawUrl
+      ];
 
       let fetchedText = null;
       let isPrivateDoc = false;
 
-      for (let i = 0; i < CORS_PROXIES.length; i++) {
+      for (let i = 0; i < targetUrls.length; i++) {
         try {
-          const controller = new AbortController();
-          const timer = setTimeout(() => controller.abort(), 2500); // 2.5초 타임아웃으로 지연 차단
-          const res = await fetch(CORS_PROXIES[i], { signal: controller.signal, cache: 'no-store' });
-          clearTimeout(timer);
+          const res = await fetch(targetUrls[i], {
+            signal: AbortSignal.timeout(3000),
+            cache: 'no-store'
+          });
 
           if (res.ok) {
             const txt = await res.text();
-            // 구글 로그인 리다이렉트 감지 (비공개 문서)
             if (txt && (txt.includes('accounts.google.com') || txt.includes('ServiceLogin') || txt.includes('<!DOCTYPE html>'))) {
               isPrivateDoc = true;
-              break; // 비공개 문서임이 확인되면 불필요한 재시도 중단
+              break;
             }
-            if (txt && (txt.includes('식단표') || txt.includes('레시피'))) {
+            if (txt && (txt.includes('식단표') || txt.includes('레시피') || txt.includes('월') || txt.includes('화'))) {
               fetchedText = txt;
               break;
             }
@@ -840,39 +831,42 @@
       }
 
       if (fetchedText) {
-        const success = parseHumanGoogleDoc(fetchedText);
-        if (success) {
-          if (indicator) {
-            indicator.textContent = '🟢 실시간 연동 완료';
-            indicator.className = 'header-badge connected';
+        if (fetchedText !== lastFetchedText) {
+          const success = parseHumanGoogleDoc(fetchedText);
+          if (success) {
+            lastFetchedText = fetchedText;
+            renderAll();
           }
-          const banner = document.getElementById('syncNoticeBanner');
-          if (banner) banner.style.display = 'none';
-          renderAll();
-          return;
         }
+        if (indicator) {
+          indicator.textContent = '🟢 실시간 연동 중';
+          indicator.className = 'header-badge connected';
+        }
+        const banner = document.getElementById('syncNoticeBanner');
+        if (banner) banner.style.display = 'none';
+        return;
       }
 
-      // 비공개 상태 또는 미연동 시 즉시 명확하게 안내
       if (indicator) {
         indicator.textContent = isPrivateDoc ? '🔒 문서 비공개 상태 (클릭)' : '구글 문서 연결 안내 (클릭)';
         indicator.className = 'header-badge notice';
       }
-      const banner = document.getElementById('syncNoticeBanner');
-      if (banner) {
-        banner.style.display = 'flex';
-        banner.innerHTML = `
-          <div>
-            <strong>🔒 구글 문서가 비공개 상태입니다</strong>: 현재 소유자만 볼 수 있어 웹앱이 내용을 읽지 못하고 있습니다. 구글 문서 우측 상단 <strong>[공유] ➡ [일반 액세스: 링크가 있는 모든 사용자(뷰어)]</strong>로 변경하시면 실시간 수정 내용이 즉시 반영됩니다! (현재는 최신 저장 식단으로 정상 표시 중)
-          </div>
-          <button onclick="this.parentElement.style.display='none'" style="background:none; border:none; color:#004a77; font-weight:bold; cursor:pointer; padding:0 6px; font-size:1.1rem;">&times;</button>
-        `;
+      if (isPrivateDoc) {
+        const banner = document.getElementById('syncNoticeBanner');
+        if (banner) {
+          banner.style.display = 'flex';
+          banner.innerHTML = `
+            <div>
+              <strong>🔒 구글 문서가 비공개 상태입니다</strong>: 구글 문서 우측 상단 <strong>[공유] ➡ [일반 액세스: 링크가 있는 모든 사용자(뷰어)]</strong>로 변경하시면 실시간 수정 내용이 즉시 반영됩니다!
+            </div>
+            <button onclick="this.parentElement.style.display='none'" style="background:none; border:none; color:#004a77; font-weight:bold; cursor:pointer; padding:0 6px; font-size:1.1rem;">&times;</button>
+          `;
+        }
       }
-      renderAll();
     }
 
     function showSyncGuide() {
-      alert("💡 실시간 구글 문서 연동 방법\n\n1. 상단의 [구글 문서] 버튼을 누릅니다.\n2. 문서 우측 상단의 [공유] 버튼을 누릅니다.\n3. 일반 액세스를 '링크가 있는 모든 사용자 - 뷰어'로 변경합니다.\n\n설정 후 이 웹앱을 새로고침하시면 구글 문서에 적으신 일반 텍스트 식단표가 실시간으로 자동 연동됩니다!");
+      alert("💡 실시간 구글 문서 연동 방법\n\n1. 상단의 [구글 문서] 버튼을 누릅니다.\n2. 문서 우측 상단의 [공유] 버튼을 누릅니다.\n3. 일반 액세스를 '링크가 있는 모든 사용자 - 뷰어'로 변경합니다.\n\n설정하시면 구글 문서에 적으신 식단표가 30초마다 자동으로 연동됩니다!");
     }
 
     function renderDayPills() {
@@ -928,7 +922,7 @@
         </div>
       `).join('');
 
-      const html = `
+      document.getElementById('recipeContainer').innerHTML = `
         <div class="hero-banner">
           <div class="hero-date"><span>${meal.fullDateStr}</span>${todayBadge}</div>
           <div class="hero-title">${meal.title}</div>
@@ -950,8 +944,6 @@
           <div class="step-list">${stepsHtml}</div>
         </div>
       `;
-
-      document.getElementById('recipeContainer').innerHTML = html;
     }
 
     function renderWeeklyCards() {
@@ -1052,131 +1044,54 @@
       renderCustomCart();
     }
 
-    function toggleCompletedSection() {
-      const sec = document.getElementById('completedSection');
-      const arrow = document.getElementById('accordionArrow');
-      if (sec.style.display === 'none' || sec.style.display === '') {
-        sec.style.display = 'block';
-        arrow.innerText = '▲ 접기';
-      } else {
-        sec.style.display = 'none';
-        arrow.innerText = '▼ 열기';
-      }
-    }
-
     function renderAll() {
+      const prevTodayId = TODAY_ID;
+      TODAY_ID = getSystemTodayId();
+
+      // 자정이 지나 날짜가 바뀌었거나 초기 로드일 때 오늘 요일 자동 선택
+      if (prevTodayId !== TODAY_ID && MEALS_DATA.some(m => m.id === TODAY_ID)) {
+        activeSelectedDayId = TODAY_ID;
+      }
+
+      // 실제 날짜 기준으로 지난 요일과 오늘의 배지 상태 자동 보정
+      MEALS_DATA.forEach(meal => {
+        if (meal.id < TODAY_ID && meal.badge.includes('오늘')) {
+          meal.badge = '조리 완료';
+          meal.fullDateStr = meal.fullDateStr.replace('오늘 저녁', '').trim();
+        } else if (meal.id === TODAY_ID) {
+          meal.badge = '오늘 저녁 확정';
+        }
+      });
+
       renderDayPills();
       renderRecipe();
       renderWeeklyCards();
     }
 
-    // 1. 캐시 방지 파라미터가 포함된 URL 생성 함수
-function getExportUrl() {
-  const timestamp = Date.now();
-  const rawUrl = `https://docs.google.com/document/d/${GOOGLE_DOC_ID}/export?format=txt&_t=${timestamp}`;
-  return [
-    'https://api.allorigins.win/raw?url=' + encodeURIComponent(rawUrl),
-    'https://corsproxy.io/?' + encodeURIComponent(rawUrl),
-    rawUrl
-  ];
-}
-
-// 2. syncWithGoogleDoc 수정 (캐시 버스팅 적용 및 자동 갱신 알림)
-let lastFetchedText = "";
-
-async function syncWithGoogleDoc() {
-  const indicator = document.getElementById('live-indicator');
-  const targetUrls = getExportUrl();
-
-  let fetchedText = null;
-  let isPrivateDoc = false;
-
-  for (let i = 0; i < targetUrls.length; i++) {
-    try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 3000);
-      const res = await fetch(targetUrls[i], { 
-        signal: controller.signal, 
-        cache: 'no-store' 
-      });
-      clearTimeout(timer);
-
-      if (res.ok) {
-        const txt = await res.text();
-        if (txt && (txt.includes('accounts.google.com') || txt.includes('ServiceLogin') || txt.includes('<!DOCTYPE html>'))) {
-          isPrivateDoc = true;
-          break;
-        }
-        if (txt && (txt.includes('식단표') || txt.includes('레시피') || txt.includes('월') || txt.includes('화'))) {
-          fetchedText = txt;
-          break;
-        }
-      }
-    } catch(e) {
-      console.warn("Proxy attempt failed or timed out:", e);
-    }
-  }
-
-  if (fetchedText) {
-    // 이전 내용과 실제로 달라졌을 때만 리렌더링
-    if (fetchedText !== lastFetchedText) {
-      const success = parseHumanGoogleDoc(fetchedText);
-      if (success) {
-        lastFetchedText = fetchedText;
+    // 브라우저 탭 활성화 시 즉시 동기화 및 날짜 갱신
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
         renderAll();
+        syncWithGoogleDoc();
       }
-    }
-    
-    if (indicator) {
-      indicator.textContent = '🟢 실시간 연동 중';
-      indicator.className = 'header-badge connected';
-    }
-    const banner = document.getElementById('syncNoticeBanner');
-    if (banner) banner.style.display = 'none';
-    return;
-  }
-
-  if (indicator) {
-    indicator.textContent = isPrivateDoc ? '🔒 문서 비공개 상태' : '동기화 대기 중';
-    indicator.className = 'header-badge notice';
-  }
-}
-
-// 3. 자동 동기화 주기 설정 (30초 폴링 + 탭 활성화 시 즉시 동기화)
-let syncInterval = null;
-
-function startAutoSync() {
-  if (syncInterval) clearInterval(syncInterval);
-  // 30초마다 문서 변경 확인
-  syncInterval = setInterval(syncWithGoogleDoc, 30000);
-}
-
-// 브라우저 탭을 다시 열거나 포커스했을 때 즉시 확인
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') {
-    syncWithGoogleDoc();
-  }
-});
-
-// 4. 인풋 Enter 키 지원
-window.addEventListener('DOMContentLoaded', () => {
-  renderAll();
-  renderCustomCart();
-  syncWithGoogleDoc();
-  startAutoSync();
-
-  const cartInput = document.getElementById('newCartInput');
-  if (cartInput) {
-    cartInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') addCustomItem();
     });
-  }
-});
 
+    // 초기화 (중복 제거 완료)
     window.addEventListener('DOMContentLoaded', () => {
       renderAll();
       renderCustomCart();
       syncWithGoogleDoc();
+
+      // 30초마다 구글 문서 자동 확인
+      setInterval(syncWithGoogleDoc, 30000);
+
+      // 장바구니 입력창 Enter 키 지원
+      const cartInput = document.getElementById('newCartInput');
+      if (cartInput) {
+        cartInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') addCustomItem();
+        });
+      }
     });
   </script>
 </body>
