@@ -1070,6 +1070,109 @@
       renderWeeklyCards();
     }
 
+    // 1. 캐시 방지 파라미터가 포함된 URL 생성 함수
+function getExportUrl() {
+  const timestamp = Date.now();
+  const rawUrl = `https://docs.google.com/document/d/${GOOGLE_DOC_ID}/export?format=txt&_t=${timestamp}`;
+  return [
+    'https://api.allorigins.win/raw?url=' + encodeURIComponent(rawUrl),
+    'https://corsproxy.io/?' + encodeURIComponent(rawUrl),
+    rawUrl
+  ];
+}
+
+// 2. syncWithGoogleDoc 수정 (캐시 버스팅 적용 및 자동 갱신 알림)
+let lastFetchedText = "";
+
+async function syncWithGoogleDoc() {
+  const indicator = document.getElementById('live-indicator');
+  const targetUrls = getExportUrl();
+
+  let fetchedText = null;
+  let isPrivateDoc = false;
+
+  for (let i = 0; i < targetUrls.length; i++) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 3000);
+      const res = await fetch(targetUrls[i], { 
+        signal: controller.signal, 
+        cache: 'no-store' 
+      });
+      clearTimeout(timer);
+
+      if (res.ok) {
+        const txt = await res.text();
+        if (txt && (txt.includes('accounts.google.com') || txt.includes('ServiceLogin') || txt.includes('<!DOCTYPE html>'))) {
+          isPrivateDoc = true;
+          break;
+        }
+        if (txt && (txt.includes('식단표') || txt.includes('레시피') || txt.includes('월') || txt.includes('화'))) {
+          fetchedText = txt;
+          break;
+        }
+      }
+    } catch(e) {
+      console.warn("Proxy attempt failed or timed out:", e);
+    }
+  }
+
+  if (fetchedText) {
+    // 이전 내용과 실제로 달라졌을 때만 리렌더링
+    if (fetchedText !== lastFetchedText) {
+      const success = parseHumanGoogleDoc(fetchedText);
+      if (success) {
+        lastFetchedText = fetchedText;
+        renderAll();
+      }
+    }
+    
+    if (indicator) {
+      indicator.textContent = '🟢 실시간 연동 중';
+      indicator.className = 'header-badge connected';
+    }
+    const banner = document.getElementById('syncNoticeBanner');
+    if (banner) banner.style.display = 'none';
+    return;
+  }
+
+  if (indicator) {
+    indicator.textContent = isPrivateDoc ? '🔒 문서 비공개 상태' : '동기화 대기 중';
+    indicator.className = 'header-badge notice';
+  }
+}
+
+// 3. 자동 동기화 주기 설정 (30초 폴링 + 탭 활성화 시 즉시 동기화)
+let syncInterval = null;
+
+function startAutoSync() {
+  if (syncInterval) clearInterval(syncInterval);
+  // 30초마다 문서 변경 확인
+  syncInterval = setInterval(syncWithGoogleDoc, 30000);
+}
+
+// 브라우저 탭을 다시 열거나 포커스했을 때 즉시 확인
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    syncWithGoogleDoc();
+  }
+});
+
+// 4. 인풋 Enter 키 지원
+window.addEventListener('DOMContentLoaded', () => {
+  renderAll();
+  renderCustomCart();
+  syncWithGoogleDoc();
+  startAutoSync();
+
+  const cartInput = document.getElementById('newCartInput');
+  if (cartInput) {
+    cartInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') addCustomItem();
+    });
+  }
+});
+
     window.addEventListener('DOMContentLoaded', () => {
       renderAll();
       renderCustomCart();
