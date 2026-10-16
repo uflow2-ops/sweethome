@@ -4,7 +4,7 @@ const SHEET_GID = '0';
 const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${SHEET_GID}`;
 
 // 기본 내장 식단 및 상세 레시피 데이터 (시트 로딩 실패 시 fallback)
-let MEALS_DATA = [
+window.MEALS_DATA = [
   {
     id: "2026-10-12",
     dayName: "월요일",
@@ -152,6 +152,8 @@ let MEALS_DATA = [
   }
 ];
 
+// This page uses the Google Docs app; keep the legacy Sheet UI opt-in.
+if (window.ENABLE_SHEET_APP) {
 // CSV 파서
 function parseCSV(text) {
   const rows = [];
@@ -579,3 +581,4 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     });
 });
+}
